@@ -3,7 +3,7 @@ from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from fastapi.middleware.cors import CORSMiddleware
-from data_scheme import QueryList
+from data_scheme import QueryList, InspectionInfo, InspectionsList
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections # please replace the database name with stock_[your name] to avoid collision at TA's side
@@ -22,13 +22,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/query", 
+@app.get("/queryList", 
          response_model=QueryList
     )
-async def get_stock_list():
+async def get_query_list() -> QueryList:
     """
     Get the list of stocks from the database
     """
-    query_collections = db.get_collection("query")
-    queries_list = await query_collections.find_one()
-    return QueryList(**queries_list)
+    queryCollection = db.get_collection("query")
+    queriesList = await queryCollection.find_one()
+    
+    return QueryList(**queriesList)
+
+@app.get("/inspections/{query}", 
+         response_model=InspectionsList
+    )
+async def get_inspections(query: str) -> InspectionsList:
+    """
+    Get the list of stocks from the database
+    """
+    inspectionCollection = db.get_collection("inspection")
+    fixQuery = query.replace("_", ",")
+    print(fixQuery)
+    inspectionsCursor = inspectionCollection.find({"query": fixQuery}).sort("date", 1)
+    inspectionsList = {"query": fixQuery, "inspections": []}
+    async for inspection in inspectionsCursor:
+        inspectionsList["inspections"].append(InspectionInfo(**inspection))
+    
+    return InspectionsList(**inspectionsList)

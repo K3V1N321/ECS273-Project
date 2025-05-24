@@ -1,6 +1,5 @@
 import asyncio
 import pandas as pd
-from data_scheme import RestaurantInfo
 from motor.motor_asyncio import AsyncIOMotorClient
 from tqdm import tqdm
 
@@ -24,10 +23,10 @@ def clean_name(name):
     return name
 
 # Get and store all possible queries (facility_name address, city, state, zip, USA)
-queryCollections = db.get_collection("query")
+queryCollection = db.get_collection("query")
 async def import_queries_to_mongodb():
     queries = data["QUERY"].unique().tolist()
-    await queryCollections.insert_one({"query": queries})
+    await queryCollection.insert_one({"query": queries})
 
 # Store all inspection info in a collection
 inspectionCollection = db.get_collection("inspection")
@@ -69,7 +68,7 @@ async def import_inspections_to_mongodb():
                 points.append(float(inspection[column]))
         
         document = {"query": query, "facilityName": facilityName, "address": fullAddress, "rating": rating,
-                    "date": date, "owner": owner, "programName": programName, "category": peDescription,
+                    "date": date, "owner": owner, "program": programName, "category": peDescription,
                     "status": status, "service": service, "score": score, "grade": grade,
                     "violationStatuses": violationStatuses, "violations": violations, "points": points}
         documents.append(document)

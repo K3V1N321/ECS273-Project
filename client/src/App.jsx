@@ -1,6 +1,5 @@
-import RenderOptions from "./component/options";
-import { BarChart } from "./component/example";
 import { useState } from "react";
+
 function App() {
   var [query, setQuesry] = useState("")
   return (
@@ -8,8 +7,7 @@ function App() {
       <header className="bg-zinc-400 text-white p-2 flex justify-between items-center">
         <h2 className="text-left text-2xl">Restaurant</h2>
         <form>
-          <input className = "bg-white text-black p-1 rounded" type = "text" placeholder = "Restuarant"></input>
-          <input className = "bg-white text-black p-1 rounded" type = "text" placeholder = "Address"></input>
+          <input className = "bg-white text-black p-1 rounded" type = "text" placeholder = "Search"></input>
           <button className = "bg-blue-600 text-white px-3 py-1 rounded">Submit</button>
         </form>
       </header>

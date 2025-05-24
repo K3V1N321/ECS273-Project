@@ -7,28 +7,27 @@ from bson import ObjectId
 # It will be represented as a `str` on the model so that it can be serialized to JSON.
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
-
-class RestaurantInfo(BaseModel):
+class QueryList(BaseModel):
     """
-    Model for Restaurant Info
+    Model for possible search queries
     """
     _id: PyObjectId
-    owner: str
-    facilityName: str
-    address: str
-    category: str
+    query: list[str]
     
 class InspectionInfo(BaseModel):
     """
     Model for Inspection Info
     """
     _id: PyObjectId
+    query: str
+    facilityName: str
+    address: str
+    rating: str
     date: str
     owner: str
-    facilityName: str
-    name: str
-    address: str
+    program: str
     category: str
+    status: str
     service: str
     score: float
     grade: str
@@ -36,9 +35,6 @@ class InspectionInfo(BaseModel):
     violations: list[str]
     points: list[float]
     
-class QueryList(BaseModel):
-    """
-    Model for possible search queries
-    """
-    _id: PyObjectId
-    addresses: list[str]
+class InspectionsList(BaseModel):
+    query: str
+    inspections: list[InspectionInfo]

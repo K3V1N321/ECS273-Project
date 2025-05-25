@@ -2,6 +2,7 @@ import asyncio
 import pandas as pd
 from motor.motor_asyncio import AsyncIOMotorClient
 from tqdm import tqdm
+from rapidfuzz import process, fuzz
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections
@@ -25,7 +26,8 @@ def clean_name(name):
 # Get and store all possible queries (facility_name address, city, state, zip, USA)
 queryCollection = db.get_collection("query")
 async def import_queries_to_mongodb():
-    queries = data["QUERY"].unique().tolist()
+    queries = data["QUERY"].str.strip()
+    queries = queries.unique().tolist()
     await queryCollection.insert_one({"query": queries})
 
 # Store all inspection info in a collection
@@ -34,7 +36,7 @@ async def import_inspections_to_mongodb():
     documents = []
     for i in tqdm(range(len(data))):
         inspection = data.loc[i].copy().dropna()
-        query = inspection["QUERY"]
+        query = inspection["QUERY"].strip()
         
         facilityName = clean_name(inspection["FACILITY NAME"])
         
@@ -79,5 +81,15 @@ async def run_main():
     await import_queries_to_mongodb()
     await import_inspections_to_mongodb()
     
+async def test():
+    query = "EMC SEAFOOD & RAW BAR 6252 N TOPANGA CANYON BLVD"
+    inspectionCollection = db.get_collection("inspection")
+    query = query.strip()
+    inspectionsCursor = inspectionCollection.find({"query": query}).sort("date", 1)
+    inspectionsList = {"query": query, "inspections": []}
+    async for inspection in inspectionsCursor:
+        print(inspection)
+    
 if __name__ == "__main__":
-    asyncio.run(run_main())
+    # asyncio.run(run_main())
+    asyncio.run(test())

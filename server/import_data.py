@@ -2,7 +2,6 @@ import asyncio
 import pandas as pd
 from motor.motor_asyncio import AsyncIOMotorClient
 from tqdm import tqdm
-from rapidfuzz import process, fuzz
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections
@@ -81,15 +80,5 @@ async def run_main():
     await import_queries_to_mongodb()
     await import_inspections_to_mongodb()
     
-async def test():
-    query = "EMC SEAFOOD & RAW BAR 6252 N TOPANGA CANYON BLVD"
-    inspectionCollection = db.get_collection("inspection")
-    query = query.strip()
-    inspectionsCursor = inspectionCollection.find({"query": query}).sort("date", 1)
-    inspectionsList = {"query": query, "inspections": []}
-    async for inspection in inspectionsCursor:
-        print(inspection)
-    
 if __name__ == "__main__":
-    # asyncio.run(run_main())
-    asyncio.run(test())
+    asyncio.run(run_main())

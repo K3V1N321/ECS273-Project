@@ -4,3 +4,5 @@ uvicorn
 pydantic
 pandas
 asyncio
+rapidfuzz
+tqdm

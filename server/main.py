@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
-
 from fastapi.middleware.cors import CORSMiddleware
 from data_scheme import QueryList, InspectionInfo, InspectionsList
+from rapidfuzz import process, fuzz
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections # please replace the database name with stock_[your name] to avoid collision at TA's side
@@ -42,11 +42,28 @@ async def get_inspections(query: str) -> InspectionsList:
     Get the list of stocks from the database
     """
     inspectionCollection = db.get_collection("inspection")
-    fixQuery = query.replace("_", ",")
-    print(fixQuery)
-    inspectionsCursor = inspectionCollection.find({"query": fixQuery}).sort("date", 1)
-    inspectionsList = {"query": fixQuery, "inspections": []}
+    query = query.strip()
+    inspectionsCursor = inspectionCollection.find({"query": query}).sort("date", 1)
+    inspectionsList = {"query": query, "inspections": []}
     async for inspection in inspectionsCursor:
         inspectionsList["inspections"].append(InspectionInfo(**inspection))
     
     return InspectionsList(**inspectionsList)
+
+@app.get("/autocomplete/{query}",
+         response_model=list[str]
+    )
+async def get_autocomplete(query: str) -> list[str]:
+    """
+    Get autocomplete options for search query
+    """
+    queryCollection = db.get_collection("query")
+    queriesList = await queryCollection.find_one()
+    queriesList = queriesList["query"]
+    
+    results = process.extract(query = query.upper(), choices = queriesList, scorer = fuzz.WRatio, limit = 5)
+    autocompletes = []
+    for result in results:
+        autocompletes.append(result[0])
+
+    return autocompletes

@@ -25,7 +25,8 @@ def clean_name(name):
 # Get and store all possible queries (facility_name address, city, state, zip, USA)
 queryCollection = db.get_collection("query")
 async def import_queries_to_mongodb():
-    queries = data["QUERY"].unique().tolist()
+    queries = data["QUERY"].str.strip()
+    queries = queries.unique().tolist()
     await queryCollection.insert_one({"query": queries})
 
 # Store all inspection info in a collection
@@ -34,7 +35,7 @@ async def import_inspections_to_mongodb():
     documents = []
     for i in tqdm(range(len(data))):
         inspection = data.loc[i].copy().dropna()
-        query = inspection["QUERY"]
+        query = inspection["QUERY"].strip()
         
         facilityName = clean_name(inspection["FACILITY NAME"])
         

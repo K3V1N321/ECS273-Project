@@ -2,8 +2,11 @@ from fastapi import FastAPI
 from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.middleware.cors import CORSMiddleware
-from data_scheme import QueryList, InspectionInfo, InspectionsList
+from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData
 from rapidfuzz import process, fuzz
+from typing import List
+from collections import defaultdict
+from datetime import datetime
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections # please replace the database name with stock_[your name] to avoid collision at TA's side
@@ -67,3 +70,35 @@ async def get_autocomplete(query: str) -> list[str]:
         autocompletes.append(result[0])
 
     return autocompletes
+
+@app.get("/heatmap/time", response_model=List[HeatmapTimeData])
+async def get_heatmap_time():
+    inspectionCollection = db.get_collection("inspection")
+    cursor = inspectionCollection.find()
+    violations_by_date = defaultdict(int)
+    
+    async for doc in cursor:
+        date_str = doc["date"]
+        date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+        key = date_obj.strftime("%Y-%m")
+        violations_by_date[key] += len(doc.get("violations", []))
+    
+    result = [HeatmapTimeData(month=k, violation=v) for k, v in violations_by_date.items()]
+    return result
+
+@app.get("/heatmap/zipcode", response_model=List[HeatmapZipData])
+async def get_heatmap_zip():
+    inspectionCollection = db.get_collection("inspection")
+    cursor = inspectionCollection.find()
+    violations_by_zip = defaultdict(int)
+    
+    async for doc in cursor:
+        address = doc.get("address", "")
+        try:
+            zip_code = address.split(",")[-2].strip().split(" ")[-1]
+        except IndexError:
+            zip_code = "unknown"
+        violations_by_zip[zip_code] += len(doc.get("violations", []))
+    
+    result = [HeatmapZipData(zipCode=k, violation=v) for k, v in violations_by_zip.items()]
+    return result

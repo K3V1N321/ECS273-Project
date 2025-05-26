@@ -38,3 +38,17 @@ class InspectionInfo(BaseModel):
 class InspectionsList(BaseModel):
     query: str
     inspections: list[InspectionInfo]
+
+class HeatmapTimeData(BaseModel):
+    """
+    Model for monthly time and violation count
+    """
+    month: str
+    violation: int
+
+class HeatmapZipData(BaseModel):
+    """
+    Model for zipcode and violation count
+    """
+    zipCode: str
+    violation: int

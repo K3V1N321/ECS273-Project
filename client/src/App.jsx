@@ -1,7 +1,8 @@
 import { autocomplete } from "./components/search";
 import { show_restaurant_overview } from "./components/restaurant_overview";
 import "./app.css";
-import { la_Map } from "./components/la_map";
+// import { la_Map } from "./components/la_map";
+import Heatmap from './components/heatmap';
 
 function App() {
   return (
@@ -18,9 +19,10 @@ function App() {
         <div className="flex flex-col w-1/2">
 
           <div className="h-1/2 p-2">
-            <h3 className="text-left text-xl">LA County Map</h3>
+            <h3 className="text-left text-xl">Violation Heatmap</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
-              {la_Map()}
+              <Heatmap/>
+              {/* {la_Map()} */}
             </div>
           </div>
 

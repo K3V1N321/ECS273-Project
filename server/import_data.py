@@ -92,9 +92,9 @@ async def import_ratings_to_mongodb():
     ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})    
 
 async def run_main():
-    # await import_queries_to_mongodb()
-    # await import_inspections_to_mongodb()
+    await import_queries_to_mongodb()
+    await import_inspections_to_mongodb()
     await import_ratings_to_mongodb()
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    asyncio.run(run_main())

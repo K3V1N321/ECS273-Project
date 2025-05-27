@@ -76,9 +76,25 @@ async def import_inspections_to_mongodb():
     
     await inspectionCollection.insert_many(documents = documents)
 
+ratingsCollection = db.get_collection("ratings") 
+async def import_ratings_to_mongodb():
+    uniqueLocationsData = data.copy().drop_duplicates(subset = ["QUERY"])
+    dataWithRating = uniqueLocationsData.loc[uniqueLocationsData["RATING"] != "None"].reset_index()
+    zipCodes = dataWithRating["FACILITY ZIP"].unique().tolist()
+    averageRatings = []
+    counts = []
+    for code in zipCodes:
+        ratingsData = dataWithRating.loc[dataWithRating["FACILITY ZIP"] == code].copy()
+        averageRating = round(ratingsData["RATING"].astype(float).mean(), 1)
+        averageRatings.append(averageRating)
+        counts.append(len(ratingsData))
+        
+    ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})    
+
 async def run_main():
-    await import_queries_to_mongodb()
-    await import_inspections_to_mongodb()
-    
+    # await import_queries_to_mongodb()
+    # await import_inspections_to_mongodb()
+    await import_ratings_to_mongodb()
+
 if __name__ == "__main__":
-    asyncio.run(run_main())
+    asyncio.run(test())

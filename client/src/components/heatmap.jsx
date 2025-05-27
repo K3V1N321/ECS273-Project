@@ -9,7 +9,10 @@ function Heatmap() {
   const [laCountyZipcodes, setLaCountyZipcodes] = useState(new Set());
   const [filteredGeoJson, setFilteredGeoJson] = useState(null);
   const [error, setError] = useState(null);
+  const [query, serQuery] = useState("");
   const tooltipRef = useRef(null);
+
+  
 
   function formatZipcode(zip) {
     return zip?.toString().trim() || "";

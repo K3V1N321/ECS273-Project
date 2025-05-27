@@ -52,3 +52,12 @@ class HeatmapZipData(BaseModel):
     """
     zipCode: str
     violation: int
+
+class RatingsData(BaseModel):
+    _id: PyObjectId
+    zip: str
+    rating: float
+    count: int
+    
+class RatingsDataList(BaseModel):
+    ratingsData: list[RatingsData]

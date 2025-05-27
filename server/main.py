@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.middleware.cors import CORSMiddleware
-from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData
+from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData, RatingsData, RatingsDataList
 from rapidfuzz import process, fuzz
 from typing import List
 from collections import defaultdict
@@ -102,3 +102,22 @@ async def get_heatmap_zip():
     
     result = [HeatmapZipData(zipCode=k, violation=v) for k, v in violations_by_zip.items()]
     return result
+
+@app.get("/ratings", response_model = RatingsDataList)
+async def get_ratings() -> RatingsDataList:
+    ratingsCollection = db.get_collection("ratings")
+    ratingsData = await ratingsCollection.find_one()
+    zips = ratingsData["zips"]
+    ratings = ratingsData["ratings"]
+    counts = ratingsData["counts"]
+    
+    ratingsData = []
+    for i in range(len(zips)):
+        data = {"zip": zips[i], "rating": ratings[i], "count": counts[i]}
+        data = RatingsData(**data)
+        ratingsData.append(data)
+    
+        
+    ratingsData = {"ratingsData": ratingsData}
+    return RatingsDataList(**ratingsData)
+    

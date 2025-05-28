@@ -23,5 +23,5 @@ export function autocomplete(query) {
                 }
             })
         }
-    }, 200);
+    }, 400);
 }

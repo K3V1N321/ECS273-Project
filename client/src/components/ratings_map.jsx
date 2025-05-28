@@ -7,7 +7,6 @@ function Ratingsmap() {
   const [laCountyZipcodes, setLaCountyZipcodes] = useState(new Set());
   const [filteredGeoJson, setFilteredGeoJson] = useState(null);
   const [error, setError] = useState(null);
-  const [query, serQuery] = useState("");
   const tooltipRef = useRef(null);
 
   function formatZipcode(zip) {
@@ -61,12 +60,12 @@ function Ratingsmap() {
   const renderRatingsMap = () => {
     const width = 800;
     const height = 600;
-    d3.select("#ratings-map").selectAll("*").remove();
+    d3.select("#rating-map").selectAll("*").remove();
 
     if (!filteredGeoJson || !filteredGeoJson.features) return;
 
     const svg = d3
-      .select("#ratings-map")
+      .select("#rating-map")
       .attr("width", width)
       .attr("height", height)
       .style("border", "1px solid #ccc");
@@ -127,11 +126,11 @@ function Ratingsmap() {
 
 
   useEffect(() => {
-    try {
-      renderRatingsMap();
-    } catch (e) {
-      setError("render error: " + e.message);
-    }
+      try {
+        renderRatingsMap();
+      } catch (e) {
+        setError("render error: " + e.message);
+      }
   }, [ratingsData, filteredGeoJson]);
 
   if (error)

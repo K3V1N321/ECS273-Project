@@ -13,8 +13,18 @@ function display_overview(query) {
         var name = inspections[0]["facilityName"]
         var address = inspections[0]["address"]
         var rating = inspections[0]["rating"]
-    
+        var grades = []
+        var scores = []
 
+        const gradeToNum = {"F": 0, "D": 1, "C": 2, "B": 3, "A": 4}
+        const numToGrade = {0: "F", 1: "D", 2: "C", 3: "B", 4: "A"}
+
+        for (const inspection of inspections) {
+            scores.push(inspection["score"])
+            grades.push(gradeToNum[inspection["grade"]])
+        }
+        const averageScore = d3.mean(scores)
+        const averageGrade = numToGrade[Math.round(d3.mean(grades))]
         
         overviewElement.append("div")
         .text(name)
@@ -24,12 +34,22 @@ function display_overview(query) {
 
         overviewElement.append("div")
         .text("Address: " + address)
-        .style("text-align", "center")
+        .style("text-align", "left")
         .style("font-size", "1rem")
 
         overviewElement.append("div")
-        .text("Rating: " + rating)
-        .style("text-align", "center")
+        .text("Average Rating: " + rating)
+        .style("text-align", "left")
+        .style("font-size", "1rem")
+
+        overviewElement.append("div")
+        .text("Average Grade: " + averageGrade)
+        .style("text-align", "left")
+        .style("font-size", "1rem")
+
+        overviewElement.append("div")
+        .text("Average Score: " + String(averageScore.toFixed(1)))
+        .style("text-align", "left")
         .style("font-size", "1rem")
         
     })

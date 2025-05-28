@@ -61,3 +61,11 @@ class RatingsData(BaseModel):
     
 class RatingsDataList(BaseModel):
     ratingsData: list[RatingsData]
+    
+class ScoreData(BaseModel):
+    _id: PyObjectId
+    zip: str
+    score: float
+    
+class ScoreDataList(BaseModel):
+    scoresData: list[ScoreData]

@@ -89,12 +89,24 @@ async def import_ratings_to_mongodb():
         averageRatings.append(averageRating)
         counts.append(len(ratingsData))
         
-    ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})    
+    ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})
+    
+scoresCollection = db.get_collection("scores") 
+async def import_scores_to_mongodb():
+    zipCodes = data["FACILITY ZIP"].unique().tolist()
+    averageScores = []
+    for code in zipCodes:
+        zipData = data.loc[data["FACILITY ZIP"] == code].copy()
+        averageScore = round(zipData["SCORE"].astype(float).mean(), 1)
+        averageScores.append(averageScore)
+        
+    scoresCollection.insert_one({"zips": zipCodes, "scores": averageScores})
 
 async def run_main():
     await import_queries_to_mongodb()
     await import_inspections_to_mongodb()
     await import_ratings_to_mongodb()
-
+    await import_scores_to_mongodb()
+    
 if __name__ == "__main__":
-    asyncio.run(run_main())
+    asyncio.run(get_scores())

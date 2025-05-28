@@ -3,7 +3,7 @@ import requests
 import time
 from tqdm import tqdm
 
-API_KEY = "AIzaSyB6U9fR1Uk1OGK5NTra1oClMvIcaoQpPp4"
+API_KEY = "key"
     
 def get_place_id(place_name):
     endpoint_url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
@@ -28,14 +28,13 @@ def get_rating(place_id):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
         'place_id': place_id,
-        'fields': 'rating,reviews',
+        'fields': 'rating',
         'key': API_KEY
     }
     response = requests.get(url, params=params)
     data = response.json()
     rating = data.get('result', {}).get('rating')
-    reviews = data.get('result', {}).get('reviews', [])[:5]
-    return rating, reviews
+    return rating
     
 def rating_main():
     df = pd.read_csv("ratings_data.csv")
@@ -65,9 +64,8 @@ def rating_main():
 if __name__ == "__main__":
     df = pd.read_csv("ratings_data.csv")
     new = df.copy()
-    indices = df.loc[df["id"] == "Unknown"].index
+    indices = df.loc[df["rating"] == "Unknown"].index
     indicesUse = indices[0:1000]
-    reviewsSave = []
     for i in tqdm(indicesUse):
         place = new.loc[i, "query"]
         id = new.loc[i, "id"]
@@ -78,25 +76,12 @@ if __name__ == "__main__":
         if id:
            print(f"Place ID for '{place}': {id}")
            new.loc[i, "id"] = id
-           rating, reviews = get_rating(id)
-           new.loc[i, "rating"] = rating
-           for j in range(len(reviews)):
-               reviews[j]["query"] = place
-           
-           reviewsSave.append(reviews)
+           rating = get_rating(id)
+           new.loc[i, "rating"] = rating           
            print(f"Rating for '{place}': {rating}")
            time.sleep(1)
         else:
             print(f"No Place ID found for '{place}'")
             new.loc[i, "id"] = "fail"
             new.loc[i, "rating"] = "fail"
-            reviewsSave.append("fail")
-        new.to_csv("ratings_data2.csv", index = False)
-        
-    reviewsDf = pd.read_csv("reviews.csv")
-    for review in reviewsSave:
-        if type(review) != list:
-            continue
-        a = pd.DataFrame(review)
-        reviewsDf = pd.concat([reviewsDf, a], axis = 0)
-    reviewsDf.to_csv("reviews.csv", index = False)
+        new.to_csv("ratings_data.csv", index = False)

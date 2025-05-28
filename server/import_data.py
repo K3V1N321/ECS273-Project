@@ -109,4 +109,4 @@ async def run_main():
     await import_scores_to_mongodb()
     
 if __name__ == "__main__":
-    asyncio.run(get_scores())
+    asyncio.run(run_main())

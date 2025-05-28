@@ -69,7 +69,7 @@ if __name__ == "__main__":
     for i in tqdm(indicesUse):
         place = new.loc[i, "query"]
         id = new.loc[i, "id"]
-        if id != "Unknown":
+        if id == "fail":
             continue
         id = get_place_id(place)
         time.sleep(1)

@@ -62,10 +62,7 @@ class RatingsData(BaseModel):
 class RatingsDataList(BaseModel):
     ratingsData: list[RatingsData]
     
-class ScoreData(BaseModel):
+class ScoresData(BaseModel):
     _id: PyObjectId
-    zip: str
-    score: float
-    
-class ScoreDataList(BaseModel):
-    scoresData: list[ScoreData]
+    dates: list[str]
+    scores: list[float]

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.middleware.cors import CORSMiddleware
-from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData, RatingsData, RatingsDataList, ScoreData, ScoreDataList
+from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData, RatingsData, RatingsDataList, ScoresData
 from rapidfuzz import process, fuzz
 from typing import List
 from collections import defaultdict
@@ -46,7 +46,7 @@ async def get_inspections(query: str) -> InspectionsList:
     """
     inspectionCollection = db.get_collection("inspection")
     query = query.strip()
-    inspectionsCursor = inspectionCollection.find({"query": query}).sort("date", 1)
+    inspectionsCursor = inspectionCollection.find({"query": query})
     inspectionsList = {"query": query, "inspections": []}
     async for inspection in inspectionsCursor:
         inspectionsList["inspections"].append(InspectionInfo(**inspection))
@@ -121,20 +121,10 @@ async def get_ratings() -> RatingsDataList:
     ratingsData = {"ratingsData": ratingsData}
     return RatingsDataList(**ratingsData)
 
-@app.get("/scores", response_model = ScoreDataList)
-async def get_scores() -> ScoreDataList:
+@app.get("/scores/{query}", response_model = ScoresData)
+async def get_scores(query) -> ScoresData:
     scoresCollections = db.get_collection("scores")
-    scoresData = await scoresCollections.find_one()
-    zips = scoresData["zips"]
-    scores = scoresData["scores"]
-    
-    scoresList = []
-    for i in range(len(zips)):
-        data = {"zip": zips[i], "score": scores[i]}
-        data = ScoreData(**data)
-        scoresList.append(data)
-    
+    scoresData = await scoresCollections.find_one({"query": query})
         
-    scoresList = {"scoresData": scoresList}
-    return ScoreDataList(**scoresList)
+    return ScoresData(**scoresData)
     

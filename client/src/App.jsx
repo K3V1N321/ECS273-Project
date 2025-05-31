@@ -1,8 +1,8 @@
 import { autocomplete } from "./components/search";
-import { show_restaurant_overview } from "./components/restaurant_overview";
 import "./app.css";
+import RestaurantOverview from "./components/restaurant_overview.jsx"
 import Heatmap from './components/heatmap';
-import Ratingsmap from "./components/ratings_map";
+import ScoreTrend from "./components/score_trend.jsx"
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
           <div className="h-1/2 p-2">
             <h3 className="text-left text-xl">Facility Overview</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
-              {show_restaurant_overview()}
+              <RestaurantOverview/>
             </div>
           </div>
 
@@ -39,7 +39,8 @@ function App() {
           <div className="h-1/3 p-2">
             <h3 className="text-left text-xl">Score Trend</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
-              {/* {show_restaurant_overview()} */}
+              <ScoreTrend/>
+              {/* <p className="text-center text-gray-500 mt-20">Empty View 3</p> */}
             </div>
           </div>
           

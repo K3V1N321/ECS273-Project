@@ -6,7 +6,8 @@ export function autocomplete(query) {
     clearTimeout(timer);
     timer = setTimeout(() => {
         var autocompletesList = d3.select("#autocompletes")
-        autocompletesList.selectAll("*").remove()
+        autocompletesList.selectAll("*").remove();
+        autocompletesList.style("display", "block");
         if (query.length > 0) {
             fetch("http://localhost:8000/autocomplete/" + query)
             .then((response) => response.json())

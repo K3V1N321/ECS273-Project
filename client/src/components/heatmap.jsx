@@ -31,7 +31,7 @@ function Heatmap() {
         setRatingsData(map)
         setError(null);
       })
-      .catch((e) => setError("zipcode data load failed: " + e.message));
+      .catch((e) => setError("ratings data load failed: " + e.message));
       }
   }, [mode]);
 
@@ -82,7 +82,7 @@ function Heatmap() {
     setFilteredGeoJson({ ...zipcodeGeoJson, features: filteredFeatures });
   }, [zipcodeGeoJson, laCountyZipcodes]);
 
-  const renderZipcodeHeatmap = () => {
+  const renderZipcodeHeatmap = (query) => {
     const width = 800;
     const height = 600;
     d3.select("#zipcode-heatmap").selectAll("*").remove();
@@ -111,8 +111,8 @@ function Heatmap() {
     const colorScale = d3.scaleSequential(t => d3.interpolateRgb("rgb(126, 0, 0)", "rgb(177, 214, 255)")(t)).domain([maxVal, 0]);
     const tooltip = d3.select(tooltipRef.current);
 
-    svg
-      .append("g")
+    const mapGroup = svg.append("g")
+    mapGroup
       .selectAll("path")
       .data(filteredGeoJson.features)
       .join("path")
@@ -147,74 +147,93 @@ function Heatmap() {
         d3.select(event.currentTarget).attr("stroke-width", 0.7);
         tooltip.style("opacity", 0);
       });
+
+    const zoom = d3.zoom()
+    .scaleExtent([1, 8]) // adjust zoom levels as needed
+    .on("zoom", (event) => {
+      mapGroup.attr("transform", event.transform);
+    });
+    
+    svg.call(zoom);
+
+
   };
 
 const renderRatingsMap = () => {
-    const width = 800;
-    const height = 600;
-    d3.select("#ratings-heatmap").selectAll("*").remove();
-    console.log
+  const width = 800;
+  const height = 600;
+  d3.select("#ratings-heatmap").selectAll("*").remove();
 
-    if (!filteredGeoJson || !filteredGeoJson.features) return;
+  if (!filteredGeoJson || !filteredGeoJson.features) return;
 
-    const svg = d3
-      .select("#ratings-heatmap")
-      .attr("width", width)
-      .attr("height", height)
-      .style("border", "1px solid #ccc");
+  const svg = d3
+    .select("#ratings-heatmap")
+    .attr("width", width)
+    .attr("height", height)
+    .style("border", "1px solid #ccc");
 
-    const projection = d3
-      .geoMercator()
-      .fitExtent(
-        [
-          [20, 20],
-          [width - 20, height - 20],
-        ],
-        filteredGeoJson
-      );
-    const path = d3.geoPath(projection);
+  const projection = d3
+    .geoMercator()
+    .fitExtent(
+      [
+        [20, 20],
+        [width - 20, height - 20],
+      ],
+      filteredGeoJson
+    );
+  const path = d3.geoPath(projection);
+  
+  const values = Object.values(ratingsData);
+  const maxVal = values.length ? d3.max(values) : 1;
+  const colorScale = d3.scaleSequential(t => d3.interpolateRgb("rgb(177, 214, 255)", "rgb(126, 0, 0)")(t)).domain([maxVal, 0]);
+  const tooltip = d3.select(tooltipRef.current);
+  
+  const mapGroup = svg.append("g")
+  mapGroup
+    .selectAll("path")
+    .data(filteredGeoJson.features)
+    .join("path")
+    .attr("d", path)
+    .attr("stroke", "#333")
+    .attr("stroke-width", 0.7)
+    .attr("fill", (d) => {
+      const zip = formatZipcode(d.properties.ZCTA5CE10);
+      const val = ratingsData[zip];
+      return val !== undefined ? colorScale(val) : "#eee";
+    })
+    .on("mouseenter", (event, d) => {
+      const zip = formatZipcode(d.properties.ZCTA5CE10);
+      const val = ratingsData[zip] ?? "no data";
+
+      d3.select(event.currentTarget).attr("stroke-width", 2);
+
+      tooltip
+        .style("opacity", 1)
+        .html(`<strong>Zipcode:</strong> ${zip}<br/><strong>Average Rating:</strong> ${val}`);
+    })
+    .on("mousemove", (event) => {
+      const offsetX = 20;
+      const offsetY = 20;
+      tooltip
+        .style("position", "absolute")
+        .style("left", (event.clientX + offsetX) + "px")
+        .style("top", (event.clientY + offsetY) + "px")
+        .style("opacity", 1);
+    })
+    .on("mouseleave", (event) => {
+      d3.select(event.currentTarget).attr("stroke-width", 0.7);
+      tooltip.style("opacity", 0);
+    });
+
+    const zoom = d3.zoom()
+    .scaleExtent([1, 8])
+    .on("zoom", (event) => {
+      mapGroup.attr("transform", event.transform);
+    });
     
-    const values = Object.values(ratingsData);
-    const maxVal = values.length ? d3.max(values) : 1;
-    const colorScale = d3.scaleSequential(t => d3.interpolateRgb("rgb(177, 214, 255)", "rgb(126, 0, 0)")(t)).domain([maxVal, 0]);
-    const tooltip = d3.select(tooltipRef.current);
+    svg.call(zoom);
 
-    svg
-      .append("g")
-      .selectAll("path")
-      .data(filteredGeoJson.features)
-      .join("path")
-      .attr("d", path)
-      .attr("stroke", "#333")
-      .attr("stroke-width", 0.7)
-      .attr("fill", (d) => {
-        const zip = formatZipcode(d.properties.ZCTA5CE10);
-        const val = ratingsData[zip];
-        return val !== undefined ? colorScale(val) : "#eee";
-      })
-      .on("mouseenter", (event, d) => {
-        const zip = formatZipcode(d.properties.ZCTA5CE10);
-        const val = ratingsData[zip] ?? "no data";
 
-        d3.select(event.currentTarget).attr("stroke-width", 2);
-
-        tooltip
-          .style("opacity", 1)
-          .html(`<strong>Zipcode:</strong> ${zip}<br/><strong>Average Rating:</strong> ${val}`);
-      })
-      .on("mousemove", (event) => {
-        const offsetX = 20;
-        const offsetY = 20;
-        tooltip
-          .style("position", "absolute")
-          .style("left", (event.clientX + offsetX) + "px")
-          .style("top", (event.clientY + offsetY) + "px")
-          .style("opacity", 1);
-      })
-      .on("mouseleave", (event) => {
-        d3.select(event.currentTarget).attr("stroke-width", 0.7);
-        tooltip.style("opacity", 0);
-      });
   };
 
   // const renderTimeHeatmap = () => {
@@ -275,12 +294,12 @@ const renderRatingsMap = () => {
 
   return (
     <div style={{"width": "100%", "height": "100%", "overflowX": "auto", "overflowY": "auto"}}>
-      <select value={mode} onChange={(e) => setMode(e.target.value)}>
+      <select style = {{"position": "absolute"}} value={mode} onChange={(e) => setMode(e.target.value)}>
         <option value="rating">RATING</option>
         <option value="zipcode">VIOLATIONS</option>
       </select>
 
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, "width": "100%", "height": "100%" }}>
         {mode === "rating" && <svg id="ratings-heatmap"></svg>}
         {mode === "zipcode" && <svg id="zipcode-heatmap"></svg>}
       </div>

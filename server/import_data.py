@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import pandas as pd
 from motor.motor_asyncio import AsyncIOMotorClient
 from tqdm import tqdm
@@ -21,6 +22,28 @@ def clean_name(name):
     name = name.strip()
     
     return name
+
+def convert_date_string_to_date(date):
+    parts = date.split("/")
+    dateObject = datetime.date(int(parts[2].strip()), int(parts[0].strip()), int(parts[1].strip()))
+    
+    return dateObject
+
+def convert_date_to_string(date):
+    return date.strftime("%m/%d/%Y")
+
+# Get the average score for each date
+def get_scores(data):
+    data["ACTIVITY DATE"] = pd.to_datetime(data["ACTIVITY DATE"].str.strip(), format = "%m/%d/%Y").dt.date
+    dataUseSorted = data.sort_values(by = "ACTIVITY DATE")
+    averageScores = dataUseSorted.groupby(["ACTIVITY DATE"])["SCORE"].mean()
+    
+    dates = averageScores.index
+    averageScores = averageScores.values.tolist()
+    
+    dates = pd.Series(dates).apply(convert_date_to_string).tolist()
+    
+    return dates, averageScores
 
 # Get and store all possible queries (facility_name address, city, state, zip, USA)
 queryCollection = db.get_collection("query")
@@ -90,18 +113,27 @@ async def import_ratings_to_mongodb():
         counts.append(len(ratingsData))
         
     ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})
+
+
     
 scoresCollection = db.get_collection("scores") 
 async def import_scores_to_mongodb():
     zipCodes = data["FACILITY ZIP"].unique().tolist()
-    averageScores = []
-    for code in zipCodes:
-        zipData = data.loc[data["FACILITY ZIP"] == code].copy()
-        averageScore = round(zipData["SCORE"].astype(float).mean(), 1)
-        averageScores.append(averageScore)
-        
-    scoresCollection.insert_one({"zips": zipCodes, "scores": averageScores})
+    documents = []
+    
+    # Get average scores by date for the entire county
+    dates, averageScores = get_scores(data.copy())
+    
+    documents.append({"query": "county", "dates": dates, "scores": averageScores})
 
+    # Get average scores by date for each zip code
+    for zipCode in tqdm(zipCodes):
+        zipData = data.copy().loc[data["FACILITY ZIP"] == zipCode]
+        dates, averageScores = get_scores(zipData)
+        documents.append({"query": zipCode, "dates": dates, "scores": averageScores})
+    
+    await scoresCollection.insert_many(documents)
+    
 async def run_main():
     await import_queries_to_mongodb()
     await import_inspections_to_mongodb()

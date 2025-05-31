@@ -54,7 +54,8 @@ function display_overview(query) {
         
     })
 }
-export function show_restaurant_overview() {
+
+function RestaurantOverview() {
     const containerRef = useRef(null);
     var [query, setQuery] = useState("");
     
@@ -78,9 +79,14 @@ export function show_restaurant_overview() {
             if (autocompletes.includes(query)) {
                 setQuery(query)
                 var autocompletesList = d3.select("#autocompletes")
-                autocompletesList.selectAll("*").remove()
-                var searchBar = d3.select("#search")
-                searchBar.property("value", "")
+                var isVisiable = autocompletesList.style("display") === "block"
+                if (isVisiable) {
+                    autocompletesList.style("display", "none")
+                }
+                // console.log(autocompletesList.style("display"))
+                // autocompletesList.selectAll("*").remove()
+                // var searchBar = d3.select("#search")
+                // searchBar.property("value", "")
             }
         })
     }, []);
@@ -93,13 +99,12 @@ export function show_restaurant_overview() {
         display_overview(query)
     }, [query])
 
-
-    console.log(containerRef)
     return (
         <div className = "chart-container d-flex" ref = {containerRef} style = {{width: "100%", height: "100%"}}>
             <div id = "location-overview" style = {{width: "100%", height: "100%", overflowY: "auto"}}></div>
         </div>
     );
-
-    
 }
+
+export default RestaurantOverview
+

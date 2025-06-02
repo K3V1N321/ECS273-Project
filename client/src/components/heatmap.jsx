@@ -19,13 +19,13 @@ function Heatmap() {
 
   useEffect(() => {
     if (mode === "rating") {
-      fetch("http://localhost:8000/ratings")
+      fetch("http://localhost:8000/ratings/map")
       .then((res) => res.json())
       .then((data) => {      
         var map = {};
         const ratingsData = data["ratingsData"];
         for (const data of ratingsData) {
-          const key = formatZipcode(data["zip"]);
+          const key = formatZipcode(data["area"]);
           map[key] = data["rating"];
         }
         setRatingsData(map)
@@ -111,7 +111,7 @@ function Heatmap() {
     const colorScale = d3.scaleSequential(t => d3.interpolateRgb("rgb(126, 0, 0)", "rgb(177, 214, 255)")(t)).domain([maxVal, 0]);
     const tooltip = d3.select(tooltipRef.current);
 
-    const mapGroup = svg.append("g")
+    const mapGroup = svg.append("g").attr("id", "map-group")
     mapGroup
       .selectAll("path")
       .data(filteredGeoJson.features)
@@ -149,12 +149,27 @@ function Heatmap() {
       });
 
     const zoom = d3.zoom()
-    .scaleExtent([1, 8]) // adjust zoom levels as needed
-    .on("zoom", (event) => {
-      mapGroup.attr("transform", event.transform);
-    });
-    
-    svg.call(zoom);
+      .scaleExtent([1, 8])
+      .filter((event) => {
+        return false;
+      })
+      .on("zoom", (event) => {
+        mapGroup.attr("transform", event.transform);
+      });
+      
+      svg.call(zoom);
+
+      d3.select("#zoom-in").on("click", () => {
+        svg.transition().call(zoom.scaleBy, 1.2);
+      })
+
+      d3.select("#zoom-out").on("click", () => {
+        svg.transition().call(zoom.scaleBy, 0.8);
+      })
+
+      d3.select("#reset-zoom").on("click", () => {
+        svg.transition().call(zoom.transform, d3.zoomIdentity);
+      })
 
 
   };
@@ -188,7 +203,7 @@ const renderRatingsMap = () => {
   const colorScale = d3.scaleSequential(t => d3.interpolateRgb("rgb(177, 214, 255)", "rgb(126, 0, 0)")(t)).domain([maxVal, 0]);
   const tooltip = d3.select(tooltipRef.current);
   
-  const mapGroup = svg.append("g")
+  const mapGroup = svg.append("g").attr("id", "map-group")
   mapGroup
     .selectAll("path")
     .data(filteredGeoJson.features)
@@ -227,13 +242,26 @@ const renderRatingsMap = () => {
 
     const zoom = d3.zoom()
     .scaleExtent([1, 8])
+    .filter((event) => {
+      return false;
+    })
     .on("zoom", (event) => {
       mapGroup.attr("transform", event.transform);
     });
     
     svg.call(zoom);
 
+    d3.select("#zoom-in").on("click", () => {
+      svg.transition().call(zoom.scaleBy, 1.2);
+    })
 
+    d3.select("#zoom-out").on("click", () => {
+      svg.transition().call(zoom.scaleBy, 0.8);
+    })
+
+    d3.select("#reset-zoom").on("click", () => {
+      svg.transition().call(zoom.transform, d3.zoomIdentity);
+    })
   };
 
   // const renderTimeHeatmap = () => {
@@ -285,6 +313,8 @@ const renderRatingsMap = () => {
     }
   }, [mode, ratingsData, zipcodeData, filteredGeoJson]);
 
+
+
   if (error)
     return (
       <div style={{ color: "red" }}>
@@ -298,6 +328,16 @@ const renderRatingsMap = () => {
         <option value="rating">RATING</option>
         <option value="zipcode">VIOLATIONS</option>
       </select>
+
+      <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "zoom-in"
+      style = {{"position": "absolute", "top": "525px", "left": "10px"}}
+      >+</button>
+      <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "zoom-out"
+      style = {{"position": "absolute", "top": "525px", "left": "40px"}} 
+      >-</button>
+      <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "reset-zoom"
+      style = {{"position": "absolute", "top": "553px", "left": "10px"}} 
+      >Reset Zoom</button>
 
       <div style={{ marginTop: 20, "width": "100%", "height": "100%" }}>
         {mode === "rating" && <svg id="ratings-heatmap"></svg>}

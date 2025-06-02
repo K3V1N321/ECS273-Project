@@ -55,9 +55,8 @@ class HeatmapZipData(BaseModel):
 
 class RatingsData(BaseModel):
     _id: PyObjectId
-    zip: str
+    area: str
     rating: float
-    count: int
     
 class RatingsDataList(BaseModel):
     ratingsData: list[RatingsData]

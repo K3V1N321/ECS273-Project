@@ -103,7 +103,7 @@ async def get_heatmap_zip():
     result = [HeatmapZipData(zipCode=k, violation=v) for k, v in violations_by_zip.items()]
     return result
 
-@app.get("/ratings", response_model = RatingsDataList)
+@app.get("/ratings/", response_model = RatingsDataList)
 async def get_ratings() -> RatingsDataList:
     ratingsCollection = db.get_collection("ratings")
     ratingsData = await ratingsCollection.find_one()
@@ -120,6 +120,30 @@ async def get_ratings() -> RatingsDataList:
         
     ratingsData = {"ratingsData": ratingsData}
     return RatingsDataList(**ratingsData)
+
+@app.get("/ratings/{query}", response_model = RatingsDataList)
+async def get_ratings(query) -> RatingsDataList:
+    ratingsCollection = db.get_collection("ratings")
+    ratingsDataList = []
+    
+    if query == "map":
+        ratingsDataCursor = ratingsCollection.find()        
+        # Get all ratings per zip code
+        async for data in ratingsDataCursor:            
+            if data["area"] == "county":
+                continue
+            
+            ratingsData = RatingsData(**data)
+            ratingsDataList.append(ratingsData)
+        ratingsDataList = {"ratingsData": ratingsDataList}
+        return RatingsDataList(**ratingsDataList)
+    else:
+        ratingsData = await ratingsCollection.find_one({"area": query})
+        ratingsData = RatingsData(**ratingsData)
+        ratingsDataList.append(ratingsData)
+        ratingsDataList = {"ratingsData": ratingsDataList}
+        return RatingsDataList(**ratingsDataList)
+         
 
 @app.get("/scores/{query}", response_model = ScoresData)
 async def get_scores(query) -> ScoresData:

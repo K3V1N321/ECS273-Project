@@ -104,17 +104,16 @@ async def import_ratings_to_mongodb():
     uniqueLocationsData = data.copy().drop_duplicates(subset = ["QUERY"])
     dataWithRating = uniqueLocationsData.loc[uniqueLocationsData["RATING"] != "None"].reset_index()
     zipCodes = dataWithRating["FACILITY ZIP"].unique().tolist()
-    averageRatings = []
-    counts = []
-    for code in zipCodes:
-        ratingsData = dataWithRating.loc[dataWithRating["FACILITY ZIP"] == code].copy()
+    documents = []
+    
+    averageRating = round(dataWithRating["RATING"].astype(float).mean(), 1)
+    documents.append({"area": "county", "rating": averageRating})
+    for zipCode in tqdm(zipCodes):
+        ratingsData = dataWithRating.loc[dataWithRating["FACILITY ZIP"] == zipCode].copy()
         averageRating = round(ratingsData["RATING"].astype(float).mean(), 1)
-        averageRatings.append(averageRating)
-        counts.append(len(ratingsData))
+        documents.append({"area": zipCode, "rating": averageRating})
         
-    ratingsCollection.insert_one({"zips": zipCodes, "ratings": averageRatings, "counts": counts})
-
-
+    await ratingsCollection.insert_many(documents)
     
 scoresCollection = db.get_collection("scores") 
 async def import_scores_to_mongodb():
@@ -139,6 +138,6 @@ async def run_main():
     await import_inspections_to_mongodb()
     await import_ratings_to_mongodb()
     await import_scores_to_mongodb()
-    
+
 if __name__ == "__main__":
     asyncio.run(run_main())

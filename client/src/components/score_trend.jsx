@@ -32,10 +32,7 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
     var countyScoresList = []
     var zipScoresList = []
     var facilityScoresList = []
-    
-    console.log(countyScores)
-    console.log(zipScores)
-    console.log(facilityScores)
+
     const parseDate = d3.timeParse("%m/%d/%Y");
 
     for (var i = 0; i < countyScores["dates"].length; i++) {
@@ -147,7 +144,7 @@ function ScoreTrend() {
         .then((data) => {
             setCountScores(data);
         })
-    })
+    }, [])
 
     useEffect(() => {
         d3.select("#submit").on("click.score", () => {
@@ -164,11 +161,10 @@ function ScoreTrend() {
                 autocompletes.push(element.textContent);
             }
 
-            // If current seeach is one of the recommended locations, change query to be search
+            // If current search is one of the recommended locations, change query to be search
             if (autocompletes.includes(query)) {
-                setQuery(query)
-                var autocompletesList = d3.select("#autocompletes")
-                var autocompletesList = d3.select("#autocompletes")
+                setQuery(query);
+                var autocompletesList = d3.select("#autocompletes");
                 var isVisiable = autocompletesList.style("display") === "block"
                 if (isVisiable) {
                     autocompletesList.style("display", "none")
@@ -183,13 +179,9 @@ function ScoreTrend() {
         }
         const queryParts = query.split(",");
         const zipCode = queryParts[2].split(" ")[2];
-        console.log(query)
-        console.log(zipCode)
         fetch("http://localhost:8000/scores/" + zipCode)
         .then((response) => response.json())
         .then((zipScores) => {
-            console.log(countyScores)
-            console.log(zipScores)
             var queryUse = encodeURIComponent(query);
             fetch("http://localhost:8000/inspections/" + queryUse)
             .then((response) => response.json())

@@ -3,6 +3,8 @@ import "./app.css";
 import RestaurantOverview from "./components/restaurant_overview.jsx"
 import Heatmap from './components/heatmap';
 import ScoreTrend from "./components/score_trend.jsx"
+import RatingInspectionBarChart from "./components/rating_inspection_bar_chart.jsx";
+import ViolationsPieChart from "./components/violations_pie_chart.jsx";
 
 function App() {
   return (
@@ -40,21 +42,21 @@ function App() {
             <h3 className="text-left text-xl">Score Trend</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
               <ScoreTrend/>
-              {/* <p className="text-center text-gray-500 mt-20">Empty View 3</p> */}
             </div>
           </div>
           
           <div className="h-1/3 p-2">
             <h3 className="text-left text-xl h-[2rem]">Public Rating vs Inspection Score</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
-              <p className="text-center text-gray-500 mt-20">Empty View 4</p>
+              <RatingInspectionBarChart/>
             </div>  
           </div>
 
           <div className="h-1/3 p-2">
             <h3 className="text-left text-xl h-[2rem]">Violation Trend / Top Violations</h3>
             <div className="border-2 border-gray-300 rounded-xl h-[calc(100%_-_2rem)]">
-              <p className="text-center text-gray-500 mt-20">Empty View 5</p>
+              <ViolationsPieChart/>
+              {/* <p className="text-center text-gray-500 mt-20">Empty View 5</p> */}
             </div>
           </div>
 

@@ -69,9 +69,19 @@ function displayBarChart(svgElement, tooltipElement, width, height, dateViolatio
     .attr("id", (data) => `bar-${data["date"]}`)
     .attr("x", (data) => xScale(data["date"]))
     .attr("y", (data) => yScale(data["count"]))
-    .attr("width", 15)
+    .attr("width", 20)
     .attr("height", (data) => Math.abs(yScale(0) - yScale(data["count"])))
     .attr("fill", "teal")
+
+    plot.append("g")
+    .selectAll("text")
+    .data(data)
+    .join("text")
+    .text((data) => String(data["count"]))
+    .attr("x", (data) => xScale(data["date"]) + 5)
+    .attr("y", (data) => yScale(data["count"]) - 5)
+    .attr("fill", "black")
+    .style("font-size", "0.8rem");
 }
 function trendBarChart(containerElement, svgElement, tooltipElement, inspections) {
     var dateViolationsCount = {}
@@ -92,7 +102,7 @@ function trendBarChart(containerElement, svgElement, tooltipElement, inspections
 
 function displayPieChart(svgElement, tooltipElement, width, height, violationCountsData) {
     const radius = d3.min([width, height]) / 2
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
+    const color = d3.scaleOrdinal(d3.schemeCategory10)
 
    const svg = d3.select(svgElement);
    svg.selectAll('*').remove()
@@ -100,7 +110,7 @@ function displayPieChart(svgElement, tooltipElement, width, height, violationCou
    .attr("transform", `translate(${width / 2}, ${height / 2})`)
 
    const pieChart = d3.pie()
-   .value((data) => data["count"]);
+   .value((data) => data["percentage"]);
 
    const arc = d3.arc()
    .innerRadius(0)
@@ -114,7 +124,10 @@ function displayPieChart(svgElement, tooltipElement, width, height, violationCou
 
    arcs.append("path")
    .attr("d", arc)
-   .attr("fill", (data) => color(data["data"]["code"]))
+   .attr("fill", (data) => color(data["data"]["violation"]))
+   .attr("stroke", "black")
+   .attr("stroke-width", 0.5)
+   .attr("stroke-opacity", 0.5)
 
    arcs.append("text")
    .style("font-size", "0.8rem")
@@ -122,7 +135,7 @@ function displayPieChart(svgElement, tooltipElement, width, height, violationCou
     const [x, y] = arc.centroid(data);
     return `translate(${x - 20}, ${y})`
    })
-   .text((data) => data["data"]["code"])
+   .text((data) => data["data"]["percentage"].toFixed(2) + "%")
 
    const tooltip = d3.select(tooltipElement);
 
@@ -151,6 +164,7 @@ function displayPieChart(svgElement, tooltipElement, width, height, violationCou
 
 function distibutionPieChart(containerElement, svgElement, tooltipElement, inspections) {
     var violationsCounts = {};
+    var totalCount = 0
     for (const inspection of inspections) {
         const violations = inspection["violations"]
         for (const violation of violations) {
@@ -160,19 +174,20 @@ function distibutionPieChart(containerElement, svgElement, tooltipElement, inspe
             else {
                 violationsCounts[violation] = 1;
             }
+            totalCount += violationsCounts[violation];
         }
     }
     var violationCountsData = []
     for (const violation in violationsCounts) {
-        const violationParts = violation.match(/#\s*([a-zA-Z0-9]+)\.\s*(.+)/)
-        const code = "#" + violationParts[1]
-        violationCountsData.push({"violation": violation, "code": code, "count": violationsCounts[violation]})
+        const count = violationsCounts[violation];
+        const percentage = (count / totalCount) * 100;
+        violationCountsData.push({"violation": violation, "count": count, "percentage": percentage})
     }
     const {width, height} = containerElement.getBoundingClientRect()
     displayPieChart(svgElement, tooltipElement, width, height, violationCountsData);
 }
 
-function ViolationsPieChart() {
+function ViolationsChart() {
     const containerRef = useRef(null);
     const svgRef = useRef(null);
     const tooltipRef = useRef(null);
@@ -210,7 +225,6 @@ function ViolationsPieChart() {
         if (!containerRef.current || !svgRef.current || query.length == 0) {
             return;
         }
-        console.log(mode)
         var queryUse = encodeURIComponent(query);
         fetch("http://localhost:8000/inspections/" + queryUse)
         .then((response) => response.json())
@@ -221,27 +235,7 @@ function ViolationsPieChart() {
             }
             else if (mode === "distribution") {
                 distibutionPieChart(containerRef.current, svgRef.current, tooltipRef.current, inspections)
-            }
-            // var violationsCounts = {};
-            // for (const inspection of inspections) {
-            //     const violations = inspection["violations"]
-            //     for (const violation of violations) {
-            //         if (violation in violationsCounts) {
-            //             violationsCounts[violation] += 1;
-            //         }
-            //         else {
-            //             violationsCounts[violation] = 1;
-            //         }
-            //     }
-            // }
-            // var violationCountsData = []
-            // for (const violation in violationsCounts) {
-            //     const violationParts = violation.match(/#\s*([a-zA-Z0-9]+)\.\s*(.+)/)
-            //     const code = "#" + violationParts[1]
-            //     violationCountsData.push({"violation": violation, "code": code, "count": violationsCounts[violation]})
-            // }
-            // const {width, height} = containerRef.current.getBoundingClientRect()
-            // displayPieChart(svgRef.current, tooltipRef.current, width, height, violationCountsData);      
+            }   
         })
     }, [mode, query])
 
@@ -276,4 +270,4 @@ function ViolationsPieChart() {
     );
 }
 
-export default ViolationsPieChart
+export default ViolationsChart

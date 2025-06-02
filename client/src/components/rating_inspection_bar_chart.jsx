@@ -27,8 +27,11 @@ function get_scores(inspections) {
 }
 
 function displayBarChart(svgElement, width, height, averageScore, rating) {
-    const categories = ["Inspection", "Rating"]
-    const data = [{"category": "Inspection", "value": averageScore}, {"category": "Rating", "value": rating}]
+    const categories = ["Inspection Score", "Public Rating (Scaled)"]
+    const data = [{"category": "Inspection Score", "value": averageScore}]
+    if (!isNaN(rating)) {
+        data.push({"category": "Public Rating (Scaled)", "value": rating})
+    }
     
     var yExtents = d3.extent([0, 1])
 
@@ -66,7 +69,7 @@ function displayBarChart(svgElement, width, height, averageScore, rating) {
     .call(d3.axisLeft(yScale));
 
     plot.append("g")
-    .attr("transform", `translate(10, ${(height / 2) + margin.top}) rotate(-90)`)
+    .attr("transform", `translate(10, ${(height / 2)}) rotate(-90)`)
     .append("text")
     .text("Score")
     .style("font-size", ".8rem");
@@ -83,6 +86,16 @@ function displayBarChart(svgElement, width, height, averageScore, rating) {
     .attr("width", xScale.bandwidth())
     .attr("height", (data) => Math.abs(yScale(0) - yScale(data["value"])))
     .attr("fill", "teal")
+
+    plot.append("g")
+    .selectAll("text")
+    .data(data)
+    .join("text")
+    .text((data) => data["value"].toFixed(2))
+    .attr("x", (data) => xScale(data["category"]) + xScale.bandwidth() / 2)
+    .attr("y", (data) => yScale(data["value"]) - 5)
+    .attr("fill", "black")
+    .style("font-size", "0.8rem");
 }
 
 function RatingInspectionBarChart() {

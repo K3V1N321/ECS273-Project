@@ -3,7 +3,7 @@ import * as d3 from "d3";
 
 const margin = { left: 40, right: 20, top: 20, bottom: 60 }
 
-function displayBarChart(svgElement, tooltipElement, width, height, dateViolationsCount) {
+function displayLineChart(svgElement, tooltipElement, width, height, dateViolationsCount) {
     var dates = []
     var counts = [0]
     var data = []
@@ -60,29 +60,19 @@ function displayBarChart(svgElement, tooltipElement, width, height, dateViolatio
     .text("Violations Count")
     .style("font-size", ".8rem");
 
+    const line = d3.line()
+    .x((data) => xScale(data["date"]))
+    .y((data) => yScale(data["count"]))
 
-    plot.append("g")
-    .selectAll("rect")
-    .data(data)
-    .join("rect")
-    .attr("class", "bar")
-    .attr("id", (data) => `bar-${data["date"]}`)
-    .attr("x", (data) => xScale(data["date"]))
-    .attr("y", (data) => yScale(data["count"]))
-    .attr("width", 20)
-    .attr("height", (data) => Math.abs(yScale(0) - yScale(data["count"])))
-    .attr("fill", "teal")
-
-    plot.append("g")
-    .selectAll("text")
-    .data(data)
-    .join("text")
-    .text((data) => String(data["count"]))
-    .attr("x", (data) => xScale(data["date"]) + 5)
-    .attr("y", (data) => yScale(data["count"]) - 5)
-    .attr("fill", "black")
-    .style("font-size", "0.8rem");
+    const linesGroup = plot.append("g")
+    linesGroup.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "blue")
+    .attr("stroke-width", 1)
+    .attr("d", line)
 }
+
 function trendBarChart(containerElement, svgElement, tooltipElement, inspections) {
     var dateViolationsCount = {}
     for (const inspection of inspections) {
@@ -97,7 +87,7 @@ function trendBarChart(containerElement, svgElement, tooltipElement, inspections
     }
 
     const {width, height} = containerElement.getBoundingClientRect()
-    displayBarChart(svgElement, tooltipElement, width, height, dateViolationsCount);
+    displayLineChart(svgElement, tooltipElement, width, height, dateViolationsCount);
 }
 
 function displayPieChart(svgElement, tooltipElement, width, height, violationCountsData) {

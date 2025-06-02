@@ -36,22 +36,6 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
 
     const parseDate = d3.timeParse("%m/%d/%Y");
 
-    for (var i = 0; i < countyScores["dates"].length; i++) {
-        const date = parseDate(countyScores["dates"][i]);
-        const score = countyScores["scores"][i]
-        dates.push(date);
-        scores.push(score);
-        countyScoresList.push({"date": date, "score": score})
-    }
-
-    for (var i = 0; i < zipScores["dates"].length; i++) {
-        const date = parseDate(zipScores["dates"][i]);
-        const score = zipScores["scores"][i]
-        dates.push(date);
-        scores.push(score);
-        zipScoresList.push({"date": date, "score": score})
-    }
-
     for (var i = 0; i < facilityScores["dates"].length; i++) {
         const date = parseDate(facilityScores["dates"][i]);
         const score = countyScores["scores"][i]
@@ -60,7 +44,34 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
         facilityScoresList.push({"date": date, "score": score})
     }
 
-    const allData = {"county": countyScoresList, "zip": zipScoresList, "facility": facilityScoresList};
+    const minDate = d3.min(dates)
+    const maxDate = d3.max(dates)
+
+
+    for (var i = 0; i < countyScores["dates"].length; i++) {
+        const date = parseDate(countyScores["dates"][i]);
+        if (date < minDate || date > maxDate) {
+            continue
+        }
+        const score = countyScores["scores"][i]
+        
+        dates.push(date);
+        scores.push(score);
+        countyScoresList.push({"date": date, "score": score})
+    }
+
+    for (var i = 0; i < zipScores["dates"].length; i++) {
+        const date = parseDate(zipScores["dates"][i]);
+        if (date < minDate || date > maxDate) {
+            continue
+        }
+        const score = zipScores["scores"][i]
+        dates.push(date);
+        scores.push(score);
+        zipScoresList.push({"date": date, "score": score})
+    }
+
+    const allData = {"restaurant": facilityScoresList, "zip code": zipScoresList, "county": countyScoresList};
 
     
     var xExtents = d3.extent(dates);
@@ -105,7 +116,7 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
     plot.append("g")
     .attr("transform", `translate(10, ${(height / 2) + margin.top}) rotate(-90)`)
     .append("text")
-    .text("Violations Count")
+    .text("Inspection Score")
     .style("font-size", ".8rem");
 
     const line = d3.line()

@@ -170,8 +170,6 @@ function Heatmap() {
       d3.select("#reset-zoom").on("click", () => {
         svg.transition().call(zoom.transform, d3.zoomIdentity);
       })
-
-
   };
 
 const renderRatingsMap = () => {
@@ -330,13 +328,13 @@ const renderRatingsMap = () => {
       </select>
 
       <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "zoom-in"
-      style = {{"position": "absolute", "top": "525px", "left": "10px"}}
+      style = {{"position": "absolute", "top": "515px", "left": "120px"}}
       >+</button>
       <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "zoom-out"
-      style = {{"position": "absolute", "top": "525px", "left": "40px"}} 
+      style = {{"position": "absolute", "top": "515px", "left": "148px"}} 
       >-</button>
       <button type = "button" className = "bg-blue-200 text-black px-1.75 py-0.5 rounded" id = "reset-zoom"
-      style = {{"position": "absolute", "top": "553px", "left": "10px"}} 
+      style = {{"position": "absolute", "top": "543px", "left": "120px"}} 
       >Reset Zoom</button>
 
       <div style={{ marginTop: 20, "width": "100%", "height": "100%" }}>

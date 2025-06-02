@@ -4,7 +4,7 @@ import RestaurantOverview from "./components/restaurant_overview.jsx"
 import Heatmap from './components/heatmap';
 import ScoreTrend from "./components/score_trend.jsx"
 import RatingInspectionBarChart from "./components/rating_inspection_bar_chart.jsx";
-import ViolationsPieChart from "./components/violations_pie_chart.jsx";
+import ViolationsPieChart from "./components/violations.jsx";
 
 function App() {
   return (

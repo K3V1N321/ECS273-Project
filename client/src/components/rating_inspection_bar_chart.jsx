@@ -26,9 +26,63 @@ function get_scores(inspections) {
     return scoresData
 }
 
-function displayBarChart(svgElement, width, height, scoresData, rating) {
-    console.log(scoresData);
-    console.log(rating);
+function displayBarChart(svgElement, width, height, averageScore, rating) {
+    const categories = ["Inspection", "Rating"]
+    const data = [{"category": "Inspection", "value": averageScore}, {"category": "Rating", "value": rating}]
+    
+    var yExtents = d3.extent([0, 1])
+
+    const svg = d3.select(svgElement);
+    svg.selectAll('*').remove()
+    const minXAxisWidth = 6 * 100;
+    const xAxisWidth = d3.max([width, minXAxisWidth]);
+    svg.attr("width", xAxisWidth);
+
+    var xScale = d3.scaleBand()
+    .rangeRound([margin.left, xAxisWidth - margin.right - 20])
+    .padding(0.3)
+    .domain(categories)
+
+    var yScale = d3.scaleLinear()
+    .range([height - margin.bottom, margin.top])
+    .domain(yExtents)
+
+    var plot = svg.append("g")
+    .attr("id", "rating-inspection-content")
+    
+    const xAxisGroup = plot.append("g")
+    .attr("transform", `translate(0, ${height - margin.bottom})`)
+    .call(d3.axisBottom(xScale).tickValues(categories))
+
+    plot.append("g")
+    .attr("transform", `translate(${(xAxisWidth / 2)}, ${height - margin.bottom + margin.top + 10})`)
+    .append("text")
+    .style("text-anchor", "middle")
+    .text("Type")
+    .style("font-size", ".8rem");
+
+    const yAxisGroup = plot.append("g")
+    .attr("transform", `translate(${margin.left}, 0)`)
+    .call(d3.axisLeft(yScale));
+
+    plot.append("g")
+    .attr("transform", `translate(10, ${(height / 2) + margin.top}) rotate(-90)`)
+    .append("text")
+    .text("Score")
+    .style("font-size", ".8rem");
+
+
+    plot.append("g")
+    .selectAll("rect")
+    .data(data)
+    .join("rect")
+    .attr("class", "bar")
+    .attr("id", (data) => `bar-${data["category"]}`)
+    .attr("x", (data) => xScale(data["category"]))
+    .attr("y", (data) => yScale(data["value"]))
+    .attr("width", xScale.bandwidth())
+    .attr("height", (data) => Math.abs(yScale(0) - yScale(data["value"])))
+    .attr("fill", "teal")
 }
 
 function RatingInspectionBarChart() {
@@ -93,19 +147,21 @@ function RatingInspectionBarChart() {
         if (!containerRef.current || !svgRef.current || query.length == 0) {
             return;
         }
-        console.log(countyRating)
-        console.log(countyScore)
-        // var queryUse = encodeURIComponent(query);
-        // fetch("http://localhost:8000/inspections" + queryUse)
-        // .then((response) => response.json())
-        // .then((data) => {
-        //     var inspections = data["inspections"];
-        //     var scoresData = get_scores(inspections);
-        //     var rating = inspections[0]["rating"];
+        var queryUse = encodeURIComponent(query);
+        fetch("http://localhost:8000/inspections/" + queryUse)
+        .then((response) => response.json())
+        .then((data) => {
+            var inspections = data["inspections"];
+            var scoresData = get_scores(inspections);
+            var rating = inspections[0]["rating"] / 5;
+            var averageScoreScaled = d3.mean(scoresData["scores"]) / 100;
 
-        //     const {width, height} = containerRef.current.getBoundingClientRect();
-        //     displayBarChart(svgRef.current, width, height, scoresData, rating);
-        // })
+
+
+
+            const {width, height} = containerRef.current.getBoundingClientRect();
+            displayBarChart(svgRef.current, width, height, averageScoreScaled, rating);
+        })
     }, [query])
 
 

@@ -32,6 +32,7 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
     var countyScoresList = []
     var zipScoresList = []
     var facilityScoresList = []
+    const color = d3.scaleOrdinal(d3.schemeObservable10)
 
     const parseDate = d3.timeParse("%m/%d/%Y");
 
@@ -90,11 +91,22 @@ function displayScoreTrend(svgElement, width, height, countyScores, zipScores, f
     .attr("transform", `translate(0, ${height - margin.bottom})`)
     .call(d3.axisBottom(xScale).tickValues(dates).tickFormat(d3.timeFormat("%m/%d/%Y")))
 
+    plot.append("g")
+    .attr("transform", `translate(${(xAxisWidth / 2)}, ${height - margin.bottom + margin.top + 10})`)
+    .append("text")
+    .style("text-anchor", "middle")
+    .text("Date (MM/DD/YYYY)")
+    .style("font-size", ".8rem");
+
     const yAxisGroup = plot.append("g")
     .attr("transform", `translate(${margin.left}, 0)`)
     .call(d3.axisLeft(yScale));
 
-    const color = d3.scaleOrdinal(d3.schemeObservable10)
+    plot.append("g")
+    .attr("transform", `translate(10, ${(height / 2) + margin.top}) rotate(-90)`)
+    .append("text")
+    .text("Violations Count")
+    .style("font-size", ".8rem");
 
     const line = d3.line()
     .x((data) => xScale(data["date"]))

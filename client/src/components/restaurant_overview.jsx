@@ -51,6 +51,16 @@ function display_overview(query) {
         .text("Average Score: " + String(averageScore.toFixed(1)))
         .style("text-align", "left")
         .style("font-size", "1rem")
+
+    fetch("http://localhost:8000/frequency/" + queryUse)
+    .then((response) => response.json())
+    .then((freqResult) => {
+        var totalFrequency = freqResult.total_count || 0;
+        overviewElement.append("div")
+        .text("Total Frequency: " + totalFrequency)
+        .style("text-align", "left")
+        .style("font-size", "1rem")
+        })
         
     })
 }
@@ -60,10 +70,8 @@ function RestaurantOverview() {
     var [query, setQuery] = useState("");
     
     useEffect(() => {
-        // Update query when submit button is clicked
         d3.select("#submit").on("click.overview", () => {
             var query = d3.select("#search").property("value")
-            // Get all recommended locations
             var autocompleteElements = d3.select("#autocompletes").selectAll("li").nodes()
             var autocompletes = []
 
@@ -75,7 +83,6 @@ function RestaurantOverview() {
                 autocompletes.push(element.textContent)
             }
 
-            // If current seeach is one of the recommended locations, change query to be search
             if (autocompletes.includes(query)) {
                 setQuery(query)
                 var autocompletesList = d3.select("#autocompletes")
@@ -83,10 +90,6 @@ function RestaurantOverview() {
                 if (isVisiable) {
                     autocompletesList.style("display", "none")
                 }
-                // console.log(autocompletesList.style("display"))
-                // autocompletesList.selectAll("*").remove()
-                // var searchBar = d3.select("#search")
-                // searchBar.property("value", "")
             }
         })
     }, []);

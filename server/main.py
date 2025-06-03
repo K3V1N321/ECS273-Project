@@ -2,11 +2,12 @@ from fastapi import FastAPI
 from pydantic.functional_validators import BeforeValidator
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.middleware.cors import CORSMiddleware
-from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData, RatingsData, RatingsDataList, ScoresData
+from data_scheme import QueryList, InspectionInfo, InspectionsList, HeatmapTimeData, HeatmapZipData, RatingsData, RatingsDataList, ScoresData,IntervalData, FrequencyData
 from rapidfuzz import process, fuzz
 from typing import List
 from collections import defaultdict
 from datetime import datetime
+from fastapi import HTTPException
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.health_inspections # please replace the database name with stock_[your name] to avoid collision at TA's side
@@ -151,4 +152,48 @@ async def get_scores(query) -> ScoresData:
     scoresData = await scoresCollections.find_one({"query": query})
         
     return ScoresData(**scoresData)
-    
+
+
+@app.get("/intervals/{query}", response_model=IntervalData)
+async def get_inspection_intervals(query: str):
+    intervalsCollection = db.get_collection("inspection")
+    cursor = intervalsCollection.find({"query": query})
+    dates = []
+    async for doc in cursor:
+        date_str = doc["date"]
+        try:
+            date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+            dates.append(date_obj)
+        except ValueError:
+            continue    
+    if len(dates) < 2:
+        return IntervalData(query=query, intervals_days=[], intervals_dates=[])
+    dates.sort()
+    intervals = []
+    intervals_dates = []
+    for i in range(1, len(dates)):
+        delta_days = (dates[i] - dates[i-1]).days
+        intervals.append(delta_days)
+        date_pair = (dates[i-1].strftime("%Y-%m-%d"), dates[i].strftime("%Y-%m-%d"))
+        intervals_dates.append(date_pair) 
+    return IntervalData(query=query, intervals_days=intervals, intervals_dates=intervals_dates)
+
+@app.get("/frequency/{query}", response_model=FrequencyData)
+async def get_inspection_frequency(query: str):
+    frequencyCollection = db.get_collection("inspection")
+    cursor = frequencyCollection.find({"query": query})
+    inspections_by_year = defaultdict(int)
+    async for doc in cursor:
+        date_str = doc.get("date")
+        if not date_str:
+            continue
+        try:
+            date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+            year_key = date_obj.strftime("%Y")
+            inspections_by_year[year_key] += 1
+        except ValueError:
+            continue 
+    sorted_data = sorted(inspections_by_year.items())
+    frequency = [{"year": k, "count": v} for k, v in sorted_data]
+    total_count = sum(inspections_by_year.values())  
+    return FrequencyData(query=query, frequency=frequency, total_count=total_count)

@@ -92,7 +92,12 @@ function trendBarChart(containerElement, svgElement, tooltipElement, inspections
 
 function displayPieChart(svgElement, tooltipElement, width, height, violationCountsData) {
     const radius = d3.min([width, height]) / 2
-    const color = d3.scaleOrdinal(d3.schemeCategory10)
+    const customColors = [
+    " #58AD96", " #40927C", " #287962", " #466080", " #476992",
+    " #466080", " #E7BB76", " #B8693D", "#E79F76", " #2C4F78"
+    ];
+
+    const color = d3.scaleOrdinal(customColors);
 
    const svg = d3.select(svgElement);
    svg.selectAll('*').remove()

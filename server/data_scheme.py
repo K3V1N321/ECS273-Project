@@ -1,4 +1,4 @@
-from typing import Optional, List, Annotated
+from typing import Optional, List, Annotated, Tuple
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
 from bson import ObjectId
@@ -65,3 +65,18 @@ class ScoresData(BaseModel):
     _id: PyObjectId
     dates: list[str]
     scores: list[float]
+
+
+class IntervalData(BaseModel):
+    query: str
+    intervals_days: List[int]
+    intervals_dates: List[Tuple[str, str]]
+
+class FrequencyItem(BaseModel):
+    year: str
+    count: int
+
+class FrequencyData(BaseModel):
+    query: str
+    frequency: List[FrequencyItem]
+    total_count: int

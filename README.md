@@ -4,9 +4,10 @@
 ### Backend
 1. Enter `server` directory via `cd server`.
 2. Extract the health_inspections.zip file to get "health_inspections.csv" dataset.
-3. Run `python3 requirements.txt` to download necesasry libraries.
+3. Run `python3 requirements.txt` or `pip install -r requirements.txt`
+ to download necesasry libraries.
 3. Make sure local mongodb is running.
-4. Run `python3 import_data.py`, if needed, to setup database.
+4. Run `python3 import_data.py` or `python import_data.py`, if needed, to setup database.
 4. Run `uvicorn main:app --reload --port 8000`.
 
 ### Frontend

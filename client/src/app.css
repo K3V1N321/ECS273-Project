@@ -1,5 +1,16 @@
 #autocompletes {
     position: absolute;
-    border: 1px solid black;
+    z-index: 10;
+    top: 100%;
+    left: 0;
+    background: white;
+    width: 100%;
+    max-height: 200px;
     overflow-y: auto;
-}
+    border: 1px solid #ccc;
+    border-top: none;
+  }
+  .autocomplete-wrapper {
+    position: relative;
+  }
+  

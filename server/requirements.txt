@@ -6,3 +6,5 @@ pandas
 asyncio
 rapidfuzz
 tqdm
+scikit-learn
+DateTime

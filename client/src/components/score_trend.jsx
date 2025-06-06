@@ -1,231 +1,181 @@
 import { useEffect, useState, useRef } from "react";
 import * as d3 from "d3";
 
-const margin = { left: 40, right: 20, top: 20, bottom: 60 }
 
+const margin = { left: 60, right: 20, top: 20, bottom: 60 };
+
+// Helper function to aggregate scores by date and compute daily averages
 function get_scores(inspections) {
-    var scores = {};
-    for (const inspection of inspections) {
-        const date = inspection["date"];
-        const score = Number(inspection["score"]);
-        if (date in scores) {
-            scores[date].push(score);
-        }
-        else {
-            scores[date] = [score];
-        }
-    }
+  const scores = {};
 
-    var scoresData = {"dates": [], "scores": []};
-    for (const date in scores) {
-        const averageScore = d3.mean(scores[date])
-        scoresData["dates"].push(date)
-        scoresData["scores"].push(averageScore)
-    }
+  
+  for (const inspection of inspections) {
+    const date = inspection["date"];
+    const score = Number(inspection["score"]);
+    if (!scores[date]) scores[date] = [];
+    scores[date].push(score);
+  }
 
-    return scoresData
+  
+  const scoresData = { dates: [], scores: [] };
+  for (const date in scores) {
+    const avg = d3.mean(scores[date]);
+    scoresData.dates.push(date);
+    scoresData.scores.push(avg);
+  }
+
+  return scoresData;
 }
 
-function displayScoreTrend(svgElement, width, height, countyScores, zipScores, facilityScores) {
-    var dates = [];
-    var scores = [];
-    var countyScoresList = []
-    var zipScoresList = []
-    var facilityScoresList = []
-    const color = d3.scaleOrdinal(d3.schemeObservable10)
+// Function to render the score trend line chart with D3
+function displayScoreTrend(svgElement, width, height, facilityScores, tooltipEl) {
+  const parseDate = d3.timeParse("%m/%d/%Y");    
+  const formatDate = d3.timeFormat("%b %d, %Y"); 
 
-    const parseDate = d3.timeParse("%m/%d/%Y");
+  
+  const data = facilityScores.dates.map((d, i) => ({
+    date: parseDate(d),
+    score: facilityScores.scores[i],
+  }));
 
-    for (var i = 0; i < facilityScores["dates"].length; i++) {
-        const date = parseDate(facilityScores["dates"][i]);
-        const score = countyScores["scores"][i]
-        dates.push(date);
-        scores.push(score);
-        facilityScoresList.push({"date": date, "score": score})
-    }
+  
+  const xExtent = d3.extent(data, d => d.date);
+  const yExtent = d3.extent(data, d => d.score);
 
-    const minDate = d3.min(dates)
-    const maxDate = d3.max(dates)
+  const svg = d3.select(svgElement);
+  const minXAxisWidth = data.length * 100; 
+  const xAxisWidth = Math.max(width, minXAxisWidth);
 
+  svg.attr("width", xAxisWidth).attr("height", height);
+  svg.selectAll("*").remove(); 
 
-    for (var i = 0; i < countyScores["dates"].length; i++) {
-        const date = parseDate(countyScores["dates"][i]);
-        if (date < minDate || date > maxDate) {
-            continue
-        }
-        const score = countyScores["scores"][i]
-        
-        dates.push(date);
-        scores.push(score);
-        countyScoresList.push({"date": date, "score": score})
-    }
+  
+  const xScale = d3.scaleTime().domain(xExtent).range([margin.left, xAxisWidth - margin.right - 20]);
+  const yScale = d3.scaleLinear()
+    .domain([Math.max(0, yExtent[0] - 5), yExtent[1]])
+    .range([height - margin.bottom, margin.top]);
 
-    for (var i = 0; i < zipScores["dates"].length; i++) {
-        const date = parseDate(zipScores["dates"][i]);
-        if (date < minDate || date > maxDate) {
-            continue
-        }
-        const score = zipScores["scores"][i]
-        dates.push(date);
-        scores.push(score);
-        zipScoresList.push({"date": date, "score": score})
-    }
+  const plot = svg.append("g").attr("id", "score-plot-content");
 
-    const allData = {"restaurant": facilityScoresList, "zip code": zipScoresList, "county": countyScoresList};
-
-    
-    var xExtents = d3.extent(dates);
-    var yExtents = d3.extent(scores);
-
-
-    const svg = d3.select(svgElement);
-    const minXAxisWidth =  dates.length * 100;
-    const xAxisWidth = d3.max([width, minXAxisWidth]);
-    svg.attr("width", xAxisWidth);
-    svg.selectAll("*").remove()
-
-    var xScale = d3.scaleTime()
-    .rangeRound([margin.left, xAxisWidth - margin.right - 20])
-    .domain(xExtents)
-
-    var yScale = d3.scaleLinear()
-    .range([height - margin.bottom, margin.top])
-    .domain(yExtents)
-
-    const xAxis = d3.axisBottom(xScale);
-    const yAxis = d3.axisLeft(yScale);
-
-    var plot = svg.append("g")
-    .attr("id", "score-plot-content");
-    
-    const xAxisGroup = plot.append("g")
+  // X-axis with tick labels for each inspection date
+  plot.append("g")
     .attr("transform", `translate(0, ${height - margin.bottom})`)
-    .call(d3.axisBottom(xScale).tickValues(dates).tickFormat(d3.timeFormat("%m/%d/%Y")))
+    .call(
+      d3.axisBottom(xScale)
+        .tickValues(data.map(d => d.date))       
+        .tickFormat(d3.timeFormat("%b %Y"))      
+    )
+    .selectAll("text")
+    .style("font-size", "0.7rem")
+    .attr("transform", "translate(0, 5)")
+    .attr("text-anchor", "end");
 
-    plot.append("g")
-    .attr("transform", `translate(${(xAxisWidth / 2)}, ${height - margin.bottom + margin.top + 10})`)
-    .append("text")
-    .style("text-anchor", "middle")
-    .text("Date (MM/DD/YYYY)")
-    .style("font-size", ".8rem");
-
-    const yAxisGroup = plot.append("g")
+  // Y-axis (scores)
+  plot.append("g")
     .attr("transform", `translate(${margin.left}, 0)`)
     .call(d3.axisLeft(yScale));
 
-    plot.append("g")
-    .attr("transform", `translate(10, ${(height / 2) + margin.top}) rotate(-90)`)
-    .append("text")
-    .text("Inspection Score")
-    .style("font-size", ".8rem");
+  // Axis labels
+  plot.append("text")
+    .attr("x", xAxisWidth / 2)
+    .attr("y", height - 10)
+    .style("text-anchor", "middle")
+    .style("font-size", ".8rem")
+    .text("Inspection Date");
 
-    const line = d3.line()
-    .x((data) => xScale(data["date"]))
-    .y((data) => yScale(data["score"]))
+  plot.append("text")
+    .attr("transform", `translate(20, ${(height / 2)}) rotate(-90)`)
+    .style("text-anchor", "middle")
+    .style("font-size", ".8rem")
+    .text("Inspection Score");
 
-    const linesGroup = plot.append("g")
-    var lines = []
-    for (const scoreType in allData) {
-        lines.push(linesGroup.append("path")
-        .datum(allData[scoreType])
-        .attr("fill", "none")
-        .attr("stroke", color(scoreType))
-        .attr("stroke-width", 1)
-        .attr("d", line))
-    }
+  // Define the line generator
+  const line = d3.line()
+    .x(d => xScale(d.date))
+    .y(d => yScale(d.score));
 
-    const legend = plot.append("g")
-    .selectAll(".legend")
-    .data(Object.keys(allData))
-    .enter()
-    .append("g")
-    .attr("class", "legend")
-    .attr("transform", (dataType, i) => `translate(${margin.left + 10}, ${margin.top + (i * 10)})`)
+  // Draw the score trend line
+  plot.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "#e0385c")
+    .attr("stroke-width", 2)
+    .attr("d", line);
 
-    legend.append("rect")
-    .attr("x", 0)
-    .attr("width", 8)
-    .attr("height", 8)
-    .attr("fill", (dataType) => color(dataType));
-
-    legend.append("text")
-    .attr("x", 10)
-    .attr("y", 8)
-    .text((dataType) => dataType)
-    .attr("font-size", ".8rem");
+  // Plot data points and attach tooltip interactivity
+  plot.selectAll("circle")
+    .data(data)
+    .join("circle")
+    .attr("cx", d => xScale(d.date))
+    .attr("cy", d => yScale(d.score))
+    .attr("r", 5)
+    .attr("fill", "#e0385c")
+    .on("mouseenter", (event, d) => {
+      tooltipEl.innerHTML = `Date: ${formatDate(d.date)}<br/>Score: ${d.score}`;
+      tooltipEl.style.opacity = 1;
+    })
+    .on("mousemove", (event) => {
+      tooltipEl.style.left = `${event.offsetX + 12}px`;
+      tooltipEl.style.top = `${event.offsetY + 12}px`;
+    })
+    .on("mouseleave", () => {
+      tooltipEl.style.opacity = 0;
+    });
 }
 
-function ScoreTrend() {
-    const containerRef = useRef(null);
-    const svgRef = useRef(null);
-    var [query, setQuery] = useState("");
-    var [countyScores, setCountScores] = useState({});
+// React component that renders the inspection score trend
+function ScoreTrend({ query }) {
+  const containerRef = useRef(null); 
+  const svgRef = useRef(null);       
+  const tooltipRef = useRef(null);   
 
-    useEffect(() => {
-        fetch("http://localhost:8000/scores/county")
-        .then((response) => response.json())
-        .then((data) => {
-            setCountScores(data);
-        })
-    }, [])
-
-    useEffect(() => {
-        d3.select("#submit").on("click.score", () => {
-            var query = d3.select("#search").property("value");
-            // Get all recommended locations
-            var autocompleteElements = d3.select("#autocompletes").selectAll("li").nodes();
-            var autocompletes = [];
-
-            if (!autocompleteElements) {
-                return;
-            }
-
-            for (const element of autocompleteElements) {
-                autocompletes.push(element.textContent);
-            }
-
-            // If current search is one of the recommended locations, change query to be search
-            if (autocompletes.includes(query)) {
-                setQuery(query);
-                var autocompletesList = d3.select("#autocompletes");
-                var isVisiable = autocompletesList.style("display") === "block"
-                if (isVisiable) {
-                    autocompletesList.style("display", "none")
-                }
-            }
-        })
-    }, []);
-
-    useEffect(() => {
-        if (!containerRef.current || !svgRef.current || query.length == 0) {
-            return;
-        }
-        const queryParts = query.split(",");
-        const zipCode = queryParts[2].split(" ")[2];
-        fetch("http://localhost:8000/scores/" + zipCode)
-        .then((response) => response.json())
-        .then((zipScores) => {
-            var queryUse = encodeURIComponent(query);
-            fetch("http://localhost:8000/inspections/" + queryUse)
-            .then((response) => response.json())
-            .then((data) => {
-                var inspections = data["inspections"];
-                var facilityScores = get_scores(inspections)
-
-                const {width, height} = containerRef.current.getBoundingClientRect()
-                displayScoreTrend(svgRef.current, width, height, countyScores, zipScores, facilityScores);
-            })
-        })
-        
-    }, [query])
-
+  useEffect(() => {
     
+    if (!query || !containerRef.current || !svgRef.current) return;
 
-    return (
-        <div className = "chart-container d-flex" ref = {containerRef} style = {{width: "100%", height: "100%", overflowX: "auto"}}>
-            <svg id = "score-trend" ref={svgRef} width = "100%" height = "100%"></svg>
-        </div>
-    );
+    const encodedQuery = encodeURIComponent(query);
+
+    // Fetch inspection records for the selected restaurant
+    fetch(`http://localhost:8000/inspections/${encodedQuery}`)
+      .then(res => res.json())
+      .then(data => {
+        const facilityScores = get_scores(data.inspections); 
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        displayScoreTrend(svgRef.current, width, height, facilityScores, tooltipRef.current);
+      });
+
+  }, [query]); 
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative", 
+      }}
+    >
+      {/* SVG chart area */}
+      <svg ref={svgRef} />
+
+      {/* Floating tooltip */}
+      <div
+        ref={tooltipRef}
+        style={{
+          position: "absolute",
+          background: "rgba(0, 0, 0, 0.75)",
+          color: "white",
+          padding: "6px 10px",
+          borderRadius: "5px",
+          fontSize: "12px",
+          pointerEvents: "none",
+          opacity: 0,
+          zIndex: 100,
+          transition: "opacity 0.3s",
+        }}
+      ></div>
+    </div>
+  );
 }
 
-export default ScoreTrend
+export default ScoreTrend;

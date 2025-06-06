@@ -8,14 +8,16 @@ from typing import List
 from collections import defaultdict
 from datetime import datetime
 from fastapi import HTTPException
+from predict_score import router as prediction_router
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
-db = client.health_inspections # please replace the database name with stock_[your name] to avoid collision at TA's side
+db = client.health_inspections 
             
 app = FastAPI(
     title="Health inspection tracking API",
     summary="An aplication tracking health inspections"
 )
+app.include_router(prediction_router)
 
 # Enables CORS to allow frontend apps to make requests to this backend
 app.add_middleware(
@@ -31,7 +33,7 @@ app.add_middleware(
     )
 async def get_query_list() -> QueryList:
     """
-    Get the list of stocks from the database
+    Get the list of loactions from the database
     """
     queryCollection = db.get_collection("query")
     queriesList = await queryCollection.find_one()
@@ -43,7 +45,7 @@ async def get_query_list() -> QueryList:
     )
 async def get_inspections(query: str) -> InspectionsList:
     """
-    Get the list of stocks from the database
+    Get the list of inspections from the database
     """
     inspectionCollection = db.get_collection("inspection")
     query = query.strip()
@@ -72,20 +74,7 @@ async def get_autocomplete(query: str) -> list[str]:
 
     return autocompletes
 
-@app.get("/heatmap/time", response_model=List[HeatmapTimeData])
-async def get_heatmap_time():
-    inspectionCollection = db.get_collection("inspection")
-    cursor = inspectionCollection.find()
-    violations_by_date = defaultdict(int)
-    
-    async for doc in cursor:
-        date_str = doc["date"]
-        date_obj = datetime.strptime(date_str, "%m/%d/%Y")
-        key = date_obj.strftime("%Y-%m")
-        violations_by_date[key] += len(doc.get("violations", []))
-    
-    result = [HeatmapTimeData(month=k, violation=v) for k, v in violations_by_date.items()]
-    return result
+
 
 @app.get("/heatmap/zipcode", response_model=List[HeatmapZipData])
 async def get_heatmap_zip():
@@ -154,35 +143,15 @@ async def get_scores(query) -> ScoresData:
     return ScoresData(**scoresData)
 
 
-@app.get("/intervals/{query}", response_model=IntervalData)
-async def get_inspection_intervals(query: str):
-    intervalsCollection = db.get_collection("inspection")
-    cursor = intervalsCollection.find({"query": query})
-    dates = []
-    async for doc in cursor:
-        date_str = doc["date"]
-        try:
-            date_obj = datetime.strptime(date_str, "%m/%d/%Y")
-            dates.append(date_obj)
-        except ValueError:
-            continue    
-    if len(dates) < 2:
-        return IntervalData(query=query, intervals_days=[], intervals_dates=[])
-    dates.sort()
-    intervals = []
-    intervals_dates = []
-    for i in range(1, len(dates)):
-        delta_days = (dates[i] - dates[i-1]).days
-        intervals.append(delta_days)
-        date_pair = (dates[i-1].strftime("%Y-%m-%d"), dates[i].strftime("%Y-%m-%d"))
-        intervals_dates.append(date_pair) 
-    return IntervalData(query=query, intervals_days=intervals, intervals_dates=intervals_dates)
+
 
 @app.get("/frequency/{query}", response_model=FrequencyData)
 async def get_inspection_frequency(query: str):
     frequencyCollection = db.get_collection("inspection")
     cursor = frequencyCollection.find({"query": query})
-    inspections_by_year = defaultdict(int)
+    
+    inspections_by_year = defaultdict(set)  
+
     async for doc in cursor:
         date_str = doc.get("date")
         if not date_str:
@@ -190,10 +159,14 @@ async def get_inspection_frequency(query: str):
         try:
             date_obj = datetime.strptime(date_str, "%m/%d/%Y")
             year_key = date_obj.strftime("%Y")
-            inspections_by_year[year_key] += 1
+            inspections_by_year[year_key].add(date_obj.date())  
         except ValueError:
-            continue 
-    sorted_data = sorted(inspections_by_year.items())
+            continue
+
+    # Convert set lengths into counts
+    sorted_data = sorted((k, len(v)) for k, v in inspections_by_year.items())
     frequency = [{"year": k, "count": v} for k, v in sorted_data]
-    total_count = sum(inspections_by_year.values())  
+    total_count = sum(v for _, v in sorted_data)
+
     return FrequencyData(query=query, frequency=frequency, total_count=total_count)
+

@@ -1,190 +1,147 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-const margin = { left: 40, right: 20, top: 20, bottom: 60 }
+// Define margins for the bar chart layout
+const margin = { left: 40, right: 20, top: 20, bottom: 60 };
 
+// Helper function to extract and average inspection scores by date
 function get_scores(inspections) {
-    var scores = {};
-    for (const inspection of inspections) {
-        const date = inspection["date"];
-        const score = Number(inspection["score"]);
-        if (date in scores) {
-            scores[date].push(score);
-        }
-        else {
-            scores[date] = [score];
-        }
-    }
+  const scores = {};
 
-    var scoresData = {"dates": [], "scores": []};
-    for (const date in scores) {
-        const averageScore = d3.mean(scores[date])
-        scoresData["dates"].push(date)
-        scoresData["scores"].push(averageScore)
-    }
+  // Group scores by date
+  for (const inspection of inspections) {
+    const date = inspection["date"];
+    const score = Number(inspection["score"]);
+    if (!scores[date]) scores[date] = [];
+    scores[date].push(score);
+  }
 
-    return scoresData
+  // Compute average score for each date
+  const scoresData = { dates: [], scores: [] };
+  for (const date in scores) {
+    const avg = d3.mean(scores[date]);
+    scoresData.dates.push(date);
+    scoresData.scores.push(avg);
+  }
+
+  return scoresData;
 }
 
+// Function to render the bar chart comparing inspection score and public rating
 function displayBarChart(svgElement, width, height, averageScore, rating) {
-    const categories = ["Inspection Score", "Public Rating (Scaled)"]
-    const data = [{"category": "Inspection Score", "value": averageScore}]
-    if (!isNaN(rating)) {
-        data.push({"category": "Public Rating (Scaled)", "value": rating})
-    }
-    
-    var yExtents = d3.extent([0, 1])
+  const categories = ["Inspection Score", "Public Rating (Scaled)"];
 
-    const svg = d3.select(svgElement);
-    svg.selectAll('*').remove()
-    const minXAxisWidth = 6 * 100;
-    const xAxisWidth = d3.max([width, minXAxisWidth]);
-    svg.attr("width", xAxisWidth);
+  // Prepare data for both bars
+  const data = [{ category: "Inspection Score", value: averageScore }];
+  if (!isNaN(rating)) {
+    data.push({ category: "Public Rating (Scaled)", value: rating });
+  }
 
-    var xScale = d3.scaleBand()
+  const svg = d3.select(svgElement);
+  svg.selectAll("*").remove(); // Clear existing chart contents
+
+  const xAxisWidth = Math.max(width, 600); // Ensure minimum width for label spacing
+  svg.attr("width", xAxisWidth);
+
+  // Create x and y scales
+  const xScale = d3.scaleBand()
     .rangeRound([margin.left, xAxisWidth - margin.right - 20])
     .padding(0.3)
-    .domain(categories)
+    .domain(categories);
 
-    var yScale = d3.scaleLinear()
+  const yScale = d3.scaleLinear()
     .range([height - margin.bottom, margin.top])
-    .domain(yExtents)
+    .domain([0, 1]); // Scores and ratings are normalized between 0 and 1
 
-    var plot = svg.append("g")
-    .attr("id", "rating-inspection-content")
-    
-    const xAxisGroup = plot.append("g")
+  const plot = svg.append("g").attr("id", "rating-inspection-content");
+
+  // Draw x-axis
+  plot.append("g")
     .attr("transform", `translate(0, ${height - margin.bottom})`)
-    .call(d3.axisBottom(xScale).tickValues(categories))
+    .call(d3.axisBottom(xScale));
 
-    plot.append("g")
-    .attr("transform", `translate(${(xAxisWidth / 2)}, ${height - margin.bottom + margin.top + 10})`)
-    .append("text")
-    .style("text-anchor", "middle")
-    .text("Type")
-    .style("font-size", ".8rem");
-
-    const yAxisGroup = plot.append("g")
+  // Draw y-axis
+  plot.append("g")
     .attr("transform", `translate(${margin.left}, 0)`)
     .call(d3.axisLeft(yScale));
 
-    plot.append("g")
-    .attr("transform", `translate(10, ${(height / 2)}) rotate(-90)`)
-    .append("text")
-    .text("Score")
-    .style("font-size", ".8rem");
+  // Add x-axis label
+  plot.append("text")
+    .attr("x", xAxisWidth / 2)
+    .attr("y", height - 5)
+    .style("text-anchor", "middle")
+    .style("font-size", ".8rem")
+    .text("Type");
 
+  // Add y-axis label
+  plot.append("text")
+    .attr("transform", `translate(10, ${height / 2}) rotate(-90)`)
+    .style("text-anchor", "middle")
+    .style("font-size", ".8rem")
+    .text("Score");
 
-    plot.append("g")
-    .selectAll("rect")
+  // Draw bars
+  plot.selectAll("rect")
     .data(data)
     .join("rect")
-    .attr("class", "bar")
-    .attr("id", (data) => `bar-${data["category"]}`)
-    .attr("x", (data) => xScale(data["category"]))
-    .attr("y", (data) => yScale(data["value"]))
+    .attr("x", d => xScale(d.category))
+    .attr("y", d => yScale(d.value))
     .attr("width", xScale.bandwidth())
-    .attr("height", (data) => Math.abs(yScale(0) - yScale(data["value"])))
-    .attr("fill", "teal")
+    .attr("height", d => Math.abs(yScale(0) - yScale(d.value)))
+    .attr("fill", "#0091af");
 
-    plot.append("g")
-    .selectAll("text")
+  // Add value labels above bars
+  plot.selectAll("text.value")
     .data(data)
     .join("text")
-    .text((data) => data["value"].toFixed(2))
-    .attr("x", (data) => xScale(data["category"]) + xScale.bandwidth() / 2)
-    .attr("y", (data) => yScale(data["value"]) - 5)
-    .attr("fill", "black")
-    .style("font-size", "0.8rem");
+    .attr("class", "value")
+    .text(d => d.value.toFixed(2))
+    .attr("x", d => xScale(d.category) + xScale.bandwidth() / 2)
+    .attr("y", d => yScale(d.value) - 5)
+    .style("text-anchor", "middle")
+    .style("font-size", ".8rem")
+    .attr("fill", "black");
 }
 
-function RatingInspectionBarChart() {
-    const containerRef = useRef(null);
-    const svgRef = useRef(null);
-    var [query, setQuery] = useState("");
-    var [countyRating, setCountyRating] = useState({});
-    var [countyScore, setCountyScore] = useState({});
+// React component that fetches inspection data and renders the chart
+function RatingInspectionBarChart({ query }) {
+  const containerRef = useRef(null); // Reference to chart container
+  const svgRef = useRef(null);       // Reference to SVG element
 
-    useEffect(() => {
-        d3.select("#submit").on("click.rating_inspection", () => {
-            var query = d3.select("#search").property("value");
-            // Get all recommended locations
-            var autocompleteElements = d3.select("#autocompletes").selectAll("li").nodes();
-            var autocompletes = []
+  useEffect(() => {
+    // Do nothing if required elements are not available
+    if (!query || !containerRef.current || !svgRef.current) return;
 
-            if (!autocompleteElements) {
-                return;
-            }
+    const encodedQuery = encodeURIComponent(query);
 
-            for (const element of autocompleteElements) {
-                autocompletes.push(element.textContent);
-            }
+    // Fetch inspection data for selected facility
+    fetch(`http://localhost:8000/inspections/${encodedQuery}`)
+      .then(res => res.json())
+      .then(data => {
+        const inspections = data.inspections;
 
-            // If current search is one of the recommended locations, change query to be search
-            if (autocompletes.includes(query)) {
-                setQuery(query);
-                var autocompletesList = d3.select("#autocompletes");
-                var isVisible = autocompletesList.style("display") === "block";
-                if (isVisible) {
-                    autocompletesList.style("display", "none");
-                }
-            }
-        })
-    }, [])
+        // Get average inspection score over time
+        const scoresData = get_scores(inspections);
+        const avgScoreScaled = d3.mean(scoresData.scores) / 100; // Scale from 0–100 to 0–1
 
-    useEffect(() => {
-        fetch("http://localhost:8000/ratings/" + "county")
-        .then((response) => response.json())
-        .then((data) => {
-            setCountyRating(data["ratingsData"][0])
-        }) 
-    }, [])
+        // Get and normalize public rating from 0–5 to 0–1
+        const rating = parseFloat(inspections[0].rating) / 5;
 
-    useEffect(() => {
-        fetch("http://localhost:8000/ratings/county")
-        .then((response) => response.json())
-        .then((data) => {
-            setCountyRating(data["ratingsData"][0])
-        }) 
-    }, [])
+        // Get dimensions and render the chart
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        displayBarChart(svgRef.current, width, height, avgScoreScaled, rating);
+      });
+  }, [query]); // Re-run effect when query changes
 
-    useEffect(() => {
-        fetch("http://localhost:8000/scores/county")
-        .then((response) => response.json())
-        .then((data) => {
-            setCountyScore({"area": "county", "score": d3.mean(data["scores"])})
-        })
-    }, [])
-
-    useEffect(() => {
-        if (!containerRef.current || !svgRef.current || query.length == 0) {
-            return;
-        }
-        var queryUse = encodeURIComponent(query);
-        fetch("http://localhost:8000/inspections/" + queryUse)
-        .then((response) => response.json())
-        .then((data) => {
-            var inspections = data["inspections"];
-            var scoresData = get_scores(inspections);
-            var rating = inspections[0]["rating"] / 5;
-            var averageScoreScaled = d3.mean(scoresData["scores"]) / 100;
-
-
-
-
-            const {width, height} = containerRef.current.getBoundingClientRect();
-            displayBarChart(svgRef.current, width, height, averageScoreScaled, rating);
-        })
-    }, [query])
-
-
-
-    return (
-        <div className = "chart-container d-flex" ref = {containerRef} style = {{width: "100%", height: "100%", overflowX: "auto"}}>
-            <svg id = "rating-inspection-bar" ref={svgRef} width = "100%" height = "100%"></svg>
-        </div>
-    );
-
+  return (
+    <div
+      className="chart-container d-flex"
+      ref={containerRef}
+      style={{ width: "100%", height: "100%", overflowX: "auto" }}
+    >
+      <svg ref={svgRef} width="100%" height="100%"></svg>
+    </div>
+  );
 }
 
-export default RatingInspectionBarChart
+export default RatingInspectionBarChart;

@@ -3,8 +3,13 @@ import requests
 import time
 from tqdm import tqdm
 
+# Make sure have ran section in preprocess_data.ipynb to create a "ratings_data.csv" file.
+# ratings_data.csv is needed to run this code.
+
+# Replace with Google API key
 API_KEY = "key"
-    
+  
+# Get id of restaurant  
 def get_place_id(place_name):
     endpoint_url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
     
@@ -23,7 +28,8 @@ def get_place_id(place_name):
         return place_id
     else:
         return None
-    
+
+# Get rating of restaurant  
 def get_rating(place_id):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
@@ -36,34 +42,11 @@ def get_rating(place_id):
     rating = data.get('result', {}).get('rating')
     return rating
     
-def rating_main():
-    df = pd.read_csv("ratings_data.csv")
-    indices = df.loc[df["rating"] == "Unknown"].index
-    new = df.copy()
-    for i in indices:
-        print(i)
-        if new.loc[i, "id"] == "Unknown":
-            break
-        elif new.loc[i, "rating"] != "Unknown":
-            continue
-        placeName = new.loc[i, "query"]
-        id = new.loc[i, "id"]
-        if id == "fail" or id == None:
-            print(f"{i}, {placeName}, No id")
-            new.loc[i, "rating"] = "fail"
-            continue
-        rating = get_rating(id)
-        time.sleep(1)
-        print(f"Rating for '{placeName}': {rating}")
-        if rating == None:
-            new.loc[i, "rating"] = "fail"
-        else:
-            new.loc[i, "rating"] = rating
-        new.to_csv("ratings_data.csv", index = False)
-    
 if __name__ == "__main__":
     df = pd.read_csv("ratings_data.csv")
     new = df.copy()
+    
+    # Get 1000 unknown ratinhs
     indices = df.loc[df["rating"] == "Unknown"].index
     indicesUse = indices[0:1000]
     for i in tqdm(indicesUse):

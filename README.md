@@ -7,6 +7,7 @@ The server folder contains the FastAPI backend logic. Key Python scripts include
 
 The Prediction&overall_analysis.ipynb have the code for the MSE and R^2 score of the Random forest regression and the code for overall analysis to find what are the most common health code violations across LA County and how do inspection scores generally distribute across restaurants over time.
 
+The preprocess_data.ipynb has 3 sections. The 1st sections handles combining the downloaded inspections and violations datasets into 1 dataset. The 2nd section should be ran once to generate a csv file to store collected ratings, which will be used in get_ratings.csv. The 3rd sections combines the health inspections data with the collected ratings.
 
 ## Setup
 ### Backend
@@ -33,4 +34,9 @@ The Facility Overview section presents key statistics, such as the restaurant’
 
 The Score Trend line graph shows how inspection scores have changed over time for the selected restaurant, while Public Rating vs Inspection Score presents a side-by-side comparison of the scaled public rating (out of 5) and inspection score (out of 100), highlighting discrepancies between customer perception and actual hygiene. The Violation Count Trend line chart displays the number of violations recorded per inspection date, offering insight into changes in compliance. Lastly, the Top Violations Pie Chart shows the distribution of the most common types of violations for the restaurant, with interactive tooltips revealing violation type, count and percentage share.
 
-## Demo Video
+## Datasets
+Dataset: Environmental Health Restaurant and Market Inspections 04/01/2022 to 03/31/2025 https://data.lacounty.gov/datasets/19b6607ac82c4512b10811870975dbdc/about
+
+Dataset: Environmental Health Restaurant and Market Violations 04/01/2022 to 03/31/ 2025 https://data.lacounty.gov/datasets/5eaea9f89b7549ee841da7617d3a9cba/about
+
+Combined, processed dataset is health_inspections.csv located in the server directory.
